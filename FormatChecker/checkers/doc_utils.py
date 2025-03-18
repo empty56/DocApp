@@ -6,7 +6,6 @@ wdHeaderFooterPrimary = 1
 wdListBullet = 2  # For bullet lists
 wdListNumber = 3  # For numbered lists
 
-# Function to convert points to centimeters
 def points_to_cm(points):
     return points * 0.0352778
 
@@ -50,18 +49,25 @@ def check_page_attributes(doc):
         print("Margins and page size are correct.")
 
 # Function to check if all text is Times New Roman, 14 pt
-def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14):
-    """Check if the font and size for each paragraph in the document is Times New Roman, 14 pt."""
-    issues = []
+def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, exclude_after=None):
+    """
+    Check if paragraphs in the document use the expected font and size.
+    Skips the "ДОДАТКИ" section if exclude_after is set to "ДОДАТКИ".
+    """
+    exclude_mode = False  # Track whether we should start excluding text
 
-    # Iterate over paragraphs
     for paragraph in doc.Paragraphs:
-        # Access the font of the entire paragraph's range
         text = paragraph.Range.Text.strip()
 
-        # Skip if the paragraph is empty or contains only whitespace/special characters
-        if not text or text in ['\x07', '\x0c']:  # Common non-visible characters like '\x07' (bell), '\x0c' (form feed)
+        if not text or text in ['\x07', '\x0c']:  # Skip empty/special characters
             continue
+
+        # If we encounter the "ДОДАТКИ" section, we stop checking
+        if exclude_after and exclude_after in text.upper():
+            exclude_mode = True
+
+        if exclude_mode:
+            continue  # Skip everything after "ДОДАТКИ"
 
         font = paragraph.Range.Font
 
@@ -72,13 +78,11 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14):
 
         # Check the font name
         if font.Name != expected_font:
-            issues.append(f"Incorrect font: {font.Name} in paragraph: {text}")
+            print(f"Incorrect font: {font.Name} in paragraph: {text}")
 
         # Check the font size
         if font.Size != expected_size:
-            issues.append(f"Incorrect font size: {font.Size} pt in paragraph: {text}")
-
-    return issues
+            print(f"Incorrect font size: {font.Size} pt in paragraph: {text}")
 
 # Function to check if text is in full caps and bold
 def check_full_caps_bold(paragraph):
@@ -98,8 +102,6 @@ def check_full_caps_bold(paragraph):
     return False
 
 def check_list_formatting(doc, headers):
-    """Check the formatting of both manually typed and Word-generated lists, and verify correct indents."""
-
     for paragraph in doc.Paragraphs:
         paragraph_format = paragraph.Format
         text = paragraph.Range.Text.strip()
@@ -143,55 +145,83 @@ def check_list_formatting(doc, headers):
                     print(f"Incorrect spacing after manually typed list marker in paragraph: {text}")
                 break  # No need to check other patterns if one matches
 
-def check_table_format(doc_path):
-    """
-    Checks whether tables in the document meet the specified formatting requirements.
+def check_table_format(doc):
+    previous_table_num = None  # Store the last detected table number
+    table_index = 0  # Track actual table numbers as detected by our logic
 
-    Args:
-        doc_path (str): Path to the Word document.
+    paragraphs = list(doc.Paragraphs)  # Convert to a list for indexing
 
-    Returns:
-        list: A list of issues found in table formatting.
-    """
-    doc = Document(doc_path)
-    issues = []
-    tables = doc.tables
-    paragraphs = doc.paragraphs
-    table_count = 0
-    previous_table_num = None
+    for i, paragraph in enumerate(paragraphs):
+        text = paragraph.Range.Text.strip()
 
-    for i, para in enumerate(paragraphs):
-        text = para.text.strip()
-
-        # Check for table number format "Таблиця X.Y"
+        # Identify a table number (Таблиця X.Y)
         if text.startswith("Таблиця"):
-            table_count += 1
-            expected_num = f"Таблиця {table_count}."
-            if not text.startswith(expected_num):
-                issues.append(f"❌ Table numbering incorrect: '{text}' (expected '{expected_num}')")
-
-            # Ensure right alignment (assuming we have a way to check)
-            if para.alignment != 2:  # 2 means right-aligned in python-docx
-                issues.append(f"❌ Table number '{text}' is not right-aligned.")
-
+            table_index += 1  # Increment our table counter
             previous_table_num = text  # Store the last valid table number
 
-        # Check for table continuation
+            # Ensure right indent is 0 (proper alignment check for table number)
+            if round(paragraph.Range.ParagraphFormat.RightIndent / 28.35, 2) != 0.0:
+                print(f"Incorrect right indent for table number: '{text}' (should be 0.0 cm).")
+
+            # Ensure the table name (next row) is CENTERED
+            if i + 1 < len(paragraphs):  # Check the next paragraph safely
+                next_paragraph = paragraphs[i + 1]
+                next_text = next_paragraph.Range.Text.strip()
+
+                if next_paragraph.Range.ParagraphFormat.Alignment != 1:  # 1 means centered
+                    print(f"Incorrect alignment for table name: '{next_text}' (should be centered).")
+
+        # Check for table continuation format
         elif text.startswith("Продовження табл."):
-            if previous_table_num and text != f"Продовження {previous_table_num}":
-                issues.append(
-                    f"❌ Incorrect continuation format: '{text}' (expected 'Продовження {previous_table_num}')")
+            match = re.match(r"Продовження табл\. (\d+(\.\d+)?)", text)  # Extract table number
+            if match:
+                table_number = match.group(1)  # Extracted number from continuation
+                expected_continuation = f"Продовження табл. {table_number}"
+                if text != expected_continuation:
+                    print(f"Incorrect continuation format: '{text}' (expected '{expected_continuation}')")
 
-    # Checking table width and text formatting
-    for idx, table in enumerate(tables):
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    # Check font and size
-                    for run in paragraph.runs:
-                        if run.font.name != "Times New Roman" or run.font.size is None or run.font.size.pt != 14:
-                            issues.append(f"❌ Table {idx + 1} contains text not in Times New Roman 14 pt.")
+    # Checking table width, text formatting, and handling merged cells
+    for idx, table in enumerate(doc.Tables, start=1):  # `idx` now directly refers to table count
+        checked_cells = set()  # Avoid duplicate font/size checks
 
-        # Width check can be done if we extract page width, but it's tricky without exact measurements.
+        try:
+            for row in table.Rows:
+                for cell in row.Cells:
+                    # Iterate through paragraphs in the cell to check their text
+                    cell_text = ""
+                    for para in cell.Range.Paragraphs:
+                        para_text = para.Range.Text.strip()
+                        # Clean up control characters like \r, \x07
+                        cell_text = re.sub(r'[\x00-\x1F\x7F]', '', para_text)
+                        # Remove extra spaces between words
+                        cell_text = re.sub(r'\s+', ' ', cell_text)
 
-    return issues
+                    # # Check if we got valid text from the cell
+                    # if len(cell_text.strip()) == 0:
+                    #     print(f"Empty or invalid text in Table {idx} at Row {row.Index}, Column {cell.ColumnIndex}")
+                    #     continue
+
+                    if cell_text and cell_text not in checked_cells:
+                        checked_cells.add(cell_text)  # Mark cell as checked
+
+                        font = cell.Range.Font
+                        if font.Name != "Times New Roman" or font.Size != 14:
+                            print(
+                                f"Incorrect font or size in Table {idx}: {repr(cell_text)}")  # Use `idx` for actual table count
+
+        except Exception:
+            print(f"Skipping Table {idx} due to merged cell issue.")  # Use `idx` for actual table count
+
+    print("Table formatting check completed.")
+
+
+def clean_topic_name(topic, to_upper=False, to_lower=False):
+    cleaned_topic = ''.join([i for i in topic if not i.isdigit()]).replace('.', '').replace('\t', '').strip()
+
+    if to_upper:
+        return cleaned_topic.upper()
+
+    elif to_lower:
+        return cleaned_topic.lower()
+
+    return cleaned_topic

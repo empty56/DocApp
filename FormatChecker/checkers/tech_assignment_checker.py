@@ -2,22 +2,12 @@ import win32com.client as win32
 import FormatChecker.checkers.doc_utils as doc_utils
 import re
 
-def clean_topic_name(topic, to_upper=False):
-    """Remove numbers, tabs, and dots, and convert to full caps if needed."""
-    # Remove numbering, dots, and tabs from the start of the topic
-    cleaned_topic = ''.join([i for i in topic if not i.isdigit()]).replace('.', '').replace('\t', '').strip()
-
-    # Convert to uppercase if needed
-    if to_upper:
-        return cleaned_topic.upper()
-
-    return cleaned_topic
 
 def check_topics(doc, topics):
     content_page_done = False
     main_content_started = False
 
-    cleaned_topics = [clean_topic_name(topic, to_upper=True) for topic in topics]
+    cleaned_topics = [doc_utils.clean_topic_name(topic, to_upper=True) for topic in topics]
 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
@@ -25,7 +15,7 @@ def check_topics(doc, topics):
         if not text:
             continue
 
-        cleaned_text = clean_topic_name(text, to_upper=True)
+        cleaned_text = doc_utils.clean_topic_name(text, to_upper=True)
 
         if not content_page_done:
             if "ЗМІСТ" in text.upper():
@@ -57,7 +47,7 @@ def extract_topics_from_toc(doc, to_upper=False):
         for toc_entry in toc.Range.Paragraphs:
             text = toc_entry.Range.Text.strip()
             if text:
-                topic_text = clean_topic_name(text, to_upper)
+                topic_text = doc_utils.clean_topic_name(text, to_upper)
                 if topic_text:  # Ensure it's not empty after cleaning
                     topics.append(topic_text)
 
@@ -71,7 +61,7 @@ def extract_topics_from_toc(doc, to_upper=False):
             current = para.Range.Next(Unit=3)  # Move to next paragraph
 
             while current and current.Text.strip():
-                topic_text = clean_topic_name(current.Text.strip(), to_upper)
+                topic_text = doc_utils.clean_topic_name(current.Text.strip(), to_upper)
 
                 # **Filter out empty or non-topic lines (like dots, page numbers)**
                 if topic_text and not re.match(r'^[\d.\s]*$', topic_text):
@@ -98,7 +88,7 @@ def check_project_stages_topic(doc, topics):
     """Check that all rows in 'ЕТАПИ ПРОЄКТУВАННЯ' section have the same left indent (0 cm or 1.25 cm)."""
 
     # Normalize topic names (remove numbers)
-    cleaned_topics = [clean_topic_name(topic) for topic in topics]
+    cleaned_topics = [doc_utils.clean_topic_name(topic) for topic in topics]
 
     # Find the index of 'ЕТАПИ ПРОЄКТУВАННЯ' (ignore numbering)
     stage_index = next((i for i, topic in enumerate(cleaned_topics) if "ЕТАПИ ПРОЄКТУВАННЯ" in topic), None)
@@ -115,7 +105,7 @@ def check_project_stages_topic(doc, topics):
 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
-        cleaned_text = clean_topic_name(text)
+        cleaned_text = doc_utils.clean_topic_name(text)
 
         # Detect the start of the section
         if "ЕТАПИ ПРОЄКТУВАННЯ" in cleaned_text:
@@ -161,11 +151,7 @@ def check_alignment(file_path):
 
     # Perform checks
     doc_utils.check_page_attributes(doc)  # Check the margins
-    font_issues = doc_utils.check_font_and_size(doc)  # Check font and size
-    if font_issues:
-        for issue in font_issues:
-            print(issue)
-
+    doc_utils.check_font_and_size(doc)  # Check font and size
 
     # Extract topics from the Table of Contents (TOC)
     topics = extract_topics_from_toc(doc, to_upper=True)  # Set to_upper=True to convert to full caps
@@ -174,6 +160,7 @@ def check_alignment(file_path):
     doc_utils.check_list_formatting(doc, topics)
 
     check_project_stages_topic(doc, topics)
+
 
     doc.Close()
     word_app.Quit()
