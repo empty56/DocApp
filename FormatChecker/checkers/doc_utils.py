@@ -1,4 +1,4 @@
-# import win32com.client as win32
+import win32com.client as win32
 import re
 from docx import Document
 
@@ -50,10 +50,6 @@ def check_page_attributes(doc):
 
 # Function to check if all text is Times New Roman, 14 pt
 def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, exclude_after=None):
-    """
-    Check if paragraphs in the document use the expected font and size.
-    Skips the "ДОДАТКИ" section if exclude_after is set to "ДОДАТКИ".
-    """
     exclude_mode = False  # Track whether we should start excluding text
 
     for paragraph in doc.Paragraphs:
@@ -84,7 +80,45 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, 
         if font.Size != expected_size:
             print(f"Incorrect font size: {font.Size} pt in paragraph: {text}")
 
-# Function to check if text is in full caps and bold
+def check_interline_spacing(doc, expected_spacing=1.5):
+    found_dodatky = False  # Flag to skip everything after "ДОДАТКИ"
+    title_page_checked = False  # Flag to skip the title page if present
+
+    for paragraph in doc.Paragraphs:
+        text = paragraph.Range.Text.strip()
+
+        # Skip empty paragraphs
+        if not text:
+            continue
+
+        # Skip the title page (assumed to be the first page)
+        if not title_page_checked:
+            page_number = paragraph.Range.Information(3)  # 3 = wdActiveEndPageNumber
+            if page_number == 1:
+                continue  # Skip title page content
+            title_page_checked = True  # Mark title page as checked
+
+        # Detect "ДОДАТКИ" section and stop checking after it
+        if text == "ДОДАТКИ":
+            found_dodatky = True
+            continue
+
+        if found_dodatky:
+            continue  # Skip checking everything after "ДОДАТКИ"
+
+        # Skip paragraphs that belong to tables
+        if paragraph.Range.Tables.Count > 0:
+            continue  # Ignore text inside tables
+
+        # Get the actual line spacing
+        actual_spacing = round(paragraph.Format.LineSpacing / 12, 2)  # Convert points to relative spacing
+        page_number = paragraph.Range.Information(3)
+
+        # Check if spacing is incorrect
+        if actual_spacing != expected_spacing:
+            print(
+                f"Incorrect interline spacing on page {page_number}: '{text}' (should be {expected_spacing}, found {actual_spacing})")
+
 def check_full_caps_bold(paragraph):
     # Print to debug the paragraph text
     # print("Checking paragraph:", paragraph.Range.Text.strip())
@@ -213,6 +247,126 @@ def check_table_format(doc):
             print(f"Skipping Table {idx} due to merged cell issue.")  # Use `idx` for actual table count
 
     print("Table formatting check completed.")
+
+def get_table_page_count(doc):
+    table_info = {}
+
+    for i, table in enumerate(doc.Tables):
+        try:
+            # Check for tables with no rows or malformed tables
+            if table.Rows.Count == 0:
+                print(f"Warning: Table {i+1} has no rows. Skipping this table.")
+                table_info[i + 1] = (None, None)
+                continue
+
+            # Attempt to access the first and last rows
+            first_row = table.Rows[1]
+            last_row = table.Rows.Last
+
+            # Get the page number of the first row
+            start_page = first_row.Range.Information(3)
+
+            # If the first and last row are on the same page, it's easy
+            last_row_page = last_row.Range.Information(3)
+
+            if last_row_page != start_page:
+                # If last row is on a different page, it spans multiple pages
+                table_info[i + 1] = (start_page, last_row_page)
+            else:
+                # If both first and last row are on the same page, skip printing
+                table_info[i + 1] = (start_page, start_page)
+
+        except Exception as e:
+            # Handle the case of vertically merged cells or any other error
+            if "Cannot access individual rows" in str(e):
+                print(f"Warning: Table {i+1} has vertically merged cells. Skipping page count.")
+            else:
+                print(f"Error processing Table {i+1}: {e}")
+            table_info[i + 1] = (None, None)
+            continue
+
+    # Display results for tables that span multiple pages
+    for idx, (start, end) in table_info.items():
+        if start != end and start is not None:  # Only print if it spans multiple pages
+            print(f"Table {idx} spans multiple pages ({start} → {end}).")
+
+# Function to check if images are centered and captions are properly formatted.
+def check_images_and_captions(doc):
+    # Loop through images and check captions
+    for shape in doc.InlineShapes:
+        shape_range = shape.Range
+        image_paragraph = shape_range.Paragraphs(1)
+
+        # Get the page number where the image is located
+        page_number = shape_range.Information(3)  # 3 corresponds to wdActiveEndPageNumber
+
+        # Check if the image is centered
+        if image_paragraph.Range.ParagraphFormat.Alignment != 1:
+            print(f"Image on page {page_number} is not centered.")
+
+        # Find the next valid paragraph (skip empty ones)
+        next_para = image_paragraph
+        while next_para and (not next_para.Range.Text.strip() or next_para.Range.Text.strip() == "/"):
+            next_para = next_para.Next()
+
+        if next_para:
+            caption_text = next_para.Range.Text.strip()
+
+            # Normalize the caption text to handle case-insensitivity
+            normalized_caption = caption_text.lower()
+
+            # Ensure it's a valid caption (must start with 'рис.' in any case)
+            if normalized_caption.startswith("рис."):
+
+                # Check if the caption is centered (valid caption check)
+                if next_para.Range.ParagraphFormat.Alignment != 1:
+                    print(
+                        f"Incorrect alignment for caption on page {page_number}: '{caption_text}' (should be centered).")
+
+                # Check if caption is bold (should not be)
+                if next_para.Range.Font.Bold:
+                    print(f"Caption is incorrectly bold: '{caption_text}'")
+
+                # Check for unnecessary capitalization
+                # Check if 'Рис.' is wrongly capitalized
+                if caption_text.startswith("Рис.") and not caption_text[0].isupper():
+                    print(f"Caption contains incorrectly capitalized 'Рис.': '{caption_text}'")
+
+                # Check if the rest of the caption text is in full uppercase
+                rest_of_caption = caption_text[caption_text.find("Рис.") + 4:].strip()
+                if rest_of_caption.isupper():
+                    print(f"Caption contains full uppercase text: '{caption_text}'")
+
+            # You could handle invalid captions separately here if needed
+            # else:
+            #     print(
+            #         f"Skipping caption because it does not start with 'Рис.' (case-insensitive check): '{caption_text}'")
+        else:
+            print("Warning: No caption found after the image.")
+
+def check_centered_items_indents_in_document(doc):
+    # Loop through all paragraphs in the document
+    for paragraph in doc.Paragraphs:
+        # Check if the paragraph is centered
+        if paragraph.Range.InlineShapes.Count > 0:
+            # Check if the image is centered (using paragraph alignment)
+            if paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
+                # Check if the left and right indents are 0
+                if paragraph.Range.ParagraphFormat.LeftIndent != 0:
+                    print(f"Image on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
+
+                if paragraph.Range.ParagraphFormat.RightIndent != 0:
+                    print(f"Image on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
+
+        elif paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
+            # Check if the left and right indents are 0
+            if paragraph.Range.ParagraphFormat.LeftIndent != 0:
+                print(
+                    f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
+
+            if paragraph.Range.ParagraphFormat.RightIndent != 0:
+                print(
+                    f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
 
 
 def clean_topic_name(topic, to_upper=False, to_lower=False):

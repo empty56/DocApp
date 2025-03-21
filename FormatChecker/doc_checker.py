@@ -24,7 +24,7 @@ def check_formatting_rules(file_path, document_part):
 
 def main():
     # Get the DOCX file path
-    # file_path = "D:/Diploma/Bakalavrat/Docs/TestDoc.docx"
+    # file_path = "D:/Diploma/Bakalavrat/Docs/TestDoc3.docx"
     # document_part = "tech_assignment"
     # process_file(file_path)
     # check_formatting_rules(file_path, document_part)

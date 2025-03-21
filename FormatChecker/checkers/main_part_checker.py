@@ -46,7 +46,7 @@ def extract_main_part_toc(doc):
     return topics
 
 def check_topics(doc, topics):
-    content_page_done = False  # Flag to skip the ToC
+    toc_done = False  # Flag to skip the ToC
     main_content_started = False  # Flag to start checking after ToC
 
     cleaned_main_topics = [doc_utils.clean_topic_name(topic, to_upper=True) for topic in topics["main_topics"]]
@@ -61,9 +61,9 @@ def check_topics(doc, topics):
         cleaned_text = doc_utils.clean_topic_name(text)
 
         # Detect and skip the Table of Contents
-        if not content_page_done:
+        if not toc_done:
             if "ЗМІСТ" in text.upper():
-                content_page_done = True
+                toc_done = True
             continue
 
         if not main_content_started:
@@ -73,6 +73,10 @@ def check_topics(doc, topics):
 
         if re.search(r"[\d\s]+$", text):  # Ignore lines that are just numbers
             continue
+
+        # Extract the actual subtopic text (remove leading numbers, spaces, and tabs)
+        subtopic_match = re.match(r"[\d.]+\s*(.*)", text)
+        subtopic_text = subtopic_match.group(1) if subtopic_match else text
 
         # Now we're in the main content, check topic formatting
         if cleaned_text.upper() in cleaned_main_topics:
@@ -87,14 +91,9 @@ def check_topics(doc, topics):
             if not is_bold:
                 print(f"Incorrect formatting for subtopic: {text} (should be bold)")
 
-            # Check that the text is not fully capitalized and starts with a capital letter
-            if text != text.capitalize():
+            # **Fix: Check capitalization only on the extracted subtopic text**
+            if subtopic_text != subtopic_text.capitalize():
                 print(f"Incorrect capitalization for subtopic: {text} (should start with a capital letter)")
-
-            # # Check that it's not in italics
-            # is_italic = paragraph.Range.Font.Italic == -1  # Word uses -1 for italic text
-            # if is_italic:
-            #     print(f"Incorrect formatting for subtopic: {text} (should not be italic)")
 
 def check_alignment(file_path):
     # Start Word application
@@ -102,13 +101,20 @@ def check_alignment(file_path):
     word_app.Visible = False  # Keep Word application hidden during processing
     doc = word_app.Documents.Open(file_path)
 
-    doc_utils.check_page_attributes(doc)
-    doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ")
+    # doc_utils.check_page_attributes(doc)
+    # doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ")
 
-    topics = extract_main_part_toc(doc)
-    check_topics(doc, topics)
+    # topics = extract_main_part_toc(doc)
+    # check_topics(doc, topics)
 
-    doc_utils.check_table_format(doc)
+    # doc_utils.check_table_format(doc)
 
+    # doc_utils.get_table_page_count(doc)
+
+    doc_utils.check_images_and_captions(doc)
+
+    doc_utils.check_interline_spacing(doc)
+
+    doc_utils.check_centered_items_indents_in_document(doc)
     doc.Close()
     word_app.Quit()

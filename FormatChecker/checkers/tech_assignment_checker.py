@@ -38,7 +38,6 @@ def check_topics(doc, topics):
                 break
 
 def extract_topics_from_toc(doc, to_upper=False):
-    """Extract topics from the Table of Contents (TOC) in the document."""
     topics = []
 
     # Try extracting using Word's TOC method first
@@ -57,7 +56,7 @@ def extract_topics_from_toc(doc, to_upper=False):
     # If no TOC found, try extracting topics manually
     for para in doc.Paragraphs:
         if "ЗМІСТ" in para.Range.Text.strip():
-            print("Found 'ЗМІСТ'. Extracting topics...")
+            # print("Found 'ЗМІСТ'. Extracting topics...")
             current = para.Range.Next(Unit=3)  # Move to next paragraph
 
             while current and current.Text.strip():
@@ -85,8 +84,6 @@ def get_paragraph_indents(paragraph):
     return left_indent, right_indent
 
 def check_project_stages_topic(doc, topics):
-    """Check that all rows in 'ЕТАПИ ПРОЄКТУВАННЯ' section have the same left indent (0 cm or 1.25 cm)."""
-
     # Normalize topic names (remove numbers)
     cleaned_topics = [doc_utils.clean_topic_name(topic) for topic in topics]
 
@@ -161,6 +158,9 @@ def check_alignment(file_path):
 
     check_project_stages_topic(doc, topics)
 
+    doc_utils.check_interline_spacing(doc)
+
+    doc_utils.check_centered_items_indents_in_document(doc)
 
     doc.Close()
     word_app.Quit()
