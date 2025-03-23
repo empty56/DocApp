@@ -1,9 +1,10 @@
 import win32com.client as win32
 import FormatChecker.checkers.doc_utils as doc_utils
+import FormatChecker.checkers.ai_utils as ai_utils
 import re
 
 
-def extract_main_part_toc(doc):
+def extract_main_part_topics(doc):
     topics = {"main_topics": [], "subtopics": []}
     flag = False  # Flag to track if we are concatenating rows without page numbers
     temp_str = ""  # Temporary string to hold concatenated rows
@@ -111,10 +112,13 @@ def check_alignment(file_path):
 
     # doc_utils.get_table_page_count(doc)
 
-    doc_utils.check_images_and_captions(doc)
+    # doc_utils.check_images_and_captions(doc)
 
-    doc_utils.check_interline_spacing(doc)
+    # doc_utils.check_interline_spacing(doc)
 
-    doc_utils.check_centered_items_indents_in_document(doc)
+    # doc_utils.check_centered_items_indents_in_document(doc)
+
+    ai_utils.check_document_spelling(doc)
+
     doc.Close()
     word_app.Quit()
