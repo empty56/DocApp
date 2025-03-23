@@ -38,9 +38,9 @@ def check_spelling(text, page_number, lang="uk"):
 
         for match in matches:
             rule_desc = match.get("message", "Unknown issue")
-            error_word = match["context"]["text"][match["offset"]:match["offset"] + match["length"]]
+            error_word = match["context"]["text"][match["offset"]:match["offset"] + match["length"]].strip()
 
-            # Extract word from brackets in rule_desc
+            # 🔹 Extract word from brackets in rule_desc
             suggested_word = extract_word_from_brackets(rule_desc)
 
             # If no word in brackets, fallback to LanguageTool's suggested correction
@@ -55,6 +55,10 @@ def check_spelling(text, page_number, lang="uk"):
             if error_word in abbreviations or suggested_word in abbreviations:
                 continue
 
+            # Skip if error_word is empty**
+            if not error_word:
+                continue
+
             # Skip if error_word is in EXCEPTION_WORDS**
             if error_word in EXCEPTION_WORDS:
                 continue
@@ -63,7 +67,7 @@ def check_spelling(text, page_number, lang="uk"):
             if any(get_similarity(suggested_word, exception) for exception in EXCEPTION_WORDS):
                 continue
 
-            # RESTORED:** Ignore capitalization mistakes after `;`
+            # Ignore capitalization mistakes after `;`**
             if match["rule"]["id"] == "UPPERCASE_SENTENCE_START":
                 before_offset = text[:match["offset"]].strip()
                 if before_offset and before_offset[-1] == ";":
@@ -74,7 +78,7 @@ def check_spelling(text, page_number, lang="uk"):
                     continue
 
             # Skip "Знайдено потенційну орфографічну помилку" with empty error word**
-            if rule_desc == "Знайдено потенційну орфографічну помилку." and not error_word.strip():
+            if (rule_desc == "Знайдено потенційну орфографічну помилку." or rule_desc== "Це слово є жаргонним") and not error_word.strip():
                 continue  # Skip if the error word is empty
 
             # Output only page number and the first 5 words of the sentence
@@ -83,7 +87,6 @@ def check_spelling(text, page_number, lang="uk"):
 
     else:
         print(f"Error: Unable to reach LanguageTool API (status: {response.status_code})")
-
 
 def check_document_spelling(doc):
     in_appendices = False

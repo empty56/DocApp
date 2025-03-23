@@ -28,7 +28,7 @@ def main():
     # document_part = "tech_assignment"
     # process_file(file_path)
     # check_formatting_rules(file_path, document_part)
-    file_path = "D:/Diploma/Bakalavrat/Docs/Main_part_copy.docx"
+    file_path = "D:/Diploma/Bakalavrat/Docs/Main_part_copy4.docx"
     document_part = "main_part"
     process_file(file_path)
     check_formatting_rules(file_path, document_part)
