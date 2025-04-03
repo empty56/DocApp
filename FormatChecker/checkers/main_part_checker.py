@@ -1,6 +1,4 @@
-import win32com.client as win32
 import FormatChecker.checkers.doc_utils as doc_utils
-import FormatChecker.checkers.ai_utils as ai_utils
 import re
 
 
@@ -96,29 +94,15 @@ def check_topics(doc, topics):
             if subtopic_text != subtopic_text.capitalize():
                 print(f"Incorrect capitalization for subtopic: {text} (should start with a capital letter)")
 
-def check_alignment(file_path):
-    # Start Word application
-    word_app = win32.Dispatch('Word.Application')
-    word_app.Visible = False  # Keep Word application hidden during processing
-    doc = word_app.Documents.Open(file_path)
+def check_formatting(doc):
+    doc_utils.check_page_attributes(doc)
+    doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ")
 
-    # doc_utils.check_page_attributes(doc)
-    # doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ")
+    topics = extract_main_part_topics(doc)
+    check_topics(doc, topics)
 
-    # topics = extract_main_part_toc(doc)
-    # check_topics(doc, topics)
-
-    # doc_utils.check_table_format(doc)
-
-    # doc_utils.get_table_page_count(doc)
-
-    # doc_utils.check_images_and_captions(doc)
-
-    # doc_utils.check_interline_spacing(doc)
-
-    # doc_utils.check_centered_items_indents_in_document(doc)
-
-    ai_utils.check_document_spelling(doc)
-
-    doc.Close()
-    word_app.Quit()
+    doc_utils.check_table_format(doc)
+    doc_utils.get_table_page_count(doc)
+    doc_utils.check_images_and_captions(doc)
+    doc_utils.check_interline_spacing(doc)
+    doc_utils.check_centered_items_indents_in_document(doc)

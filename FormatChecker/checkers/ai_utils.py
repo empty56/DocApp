@@ -119,9 +119,3 @@ def check_document_spelling(doc):
 
             # Pass page number and text to check_spelling function
         check_spelling(text, page_num)
-
-
-
-
-
-

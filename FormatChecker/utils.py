@@ -10,4 +10,4 @@ def process_file(file_path):
     if extension == '.docx' or extension == '.doc':
         return "Processing your file..."
     else:
-        return "Unsupported file format. Please use .docx or .pdf files."
+        return "Unsupported file format. Please use .docx or .doc files."

@@ -1,0 +1,40 @@
+<form id="doc-check-form" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <label for="document">Upload Document:</label>
+    <input type="file" name="document" id="document" required><br><br>
+
+    <label for="document_part">Select Document Part:</label>
+    <select name="document_part" id="document_part" required>
+        <option value="tech_assignment">Технічне завдання</option>
+        <option value="main_part">Пояснювальна записка</option>
+        <option value="testing_methodology">Методологія тестування</option>
+        <option value="user_manual">Керівництво користувача</option>
+    </select><br><br>
+
+    <input type="checkbox" id="formatting_check" name="formatting_check" checked>
+    <label for="formatting_check">Check Formatting</label><br>
+
+    <input type="checkbox" id="grammar_check" name="grammar_check">
+    <label for="grammar_check">Check Grammar (AI)</label><br><br>
+
+    <button type="submit">Check Document</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+document.getElementById("doc-check-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    let formData = new FormData(this);
+
+    let response = await fetch("{% url 'check_format' %}", {
+        method: "POST",
+        body: formData
+    });
+
+    let result = await response.json();
+    document.getElementById("result").innerText = result.message;
+});
+</script>

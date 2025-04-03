@@ -1,17 +1,25 @@
-from rest_framework.decorators import api_view
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import DocumentSerializer
+from django.http import JsonResponse
+from django.shortcuts import render
+from .doc_checker import check_document_rules
+from io import BytesIO
 
-@api_view(['POST'])
-def upload_document(request):
-    parser_classes = (MultiPartParser, FormParser)
-    serializer = DocumentSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+def index(request):
+    return render(request, 'index.html')
 
+def check_format(request):
+    if request.method == "POST":
+        uploaded_file = request.FILES.get("document")
+        document_part = request.POST.get("document_part")
+        formatting_check = request.POST.get("formatting_check") == "on"
+        grammar_check = request.POST.get("grammar_check") == "on"
 
+        if not uploaded_file:
+            return JsonResponse({"error": "No file uploaded"}, status=400)
 
+        file_stream = BytesIO(uploaded_file.read())  # Convert to memory stream
+
+        # Pass the memory stream instead of a file path
+        result = check_document_rules(file_stream, document_part, formatting_check, grammar_check)
+        return JsonResponse({"message": result})
+
+    return JsonResponse({"error": "No file uploaded"}, status=400)

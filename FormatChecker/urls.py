@@ -1,7 +1,7 @@
-
 from django.urls import path
-from .views import upload_document
+from .views import index, check_format
 
 urlpatterns = [
-    path('upload/', upload_document, name='upload_document'),
+    path("", index, name="index"),
+    path("check-format/", check_format, name="check_format"),
 ]
