@@ -25,14 +25,14 @@ def check_spelling(text, page_number, lang="uk"):
         "text": text,
         "language": lang,
     }
-
+    result_text = ""
     response = requests.post(LANGUAGETOOL_URL, data=params)
 
     if response.status_code == 200:
         matches = response.json().get("matches", [])
 
         if not matches:
-            return None  # No issues found
+            return ""  # No issues found
 
         abbreviations = extract_abbreviations(text)  # Get document-specific abbreviations
 
@@ -83,15 +83,18 @@ def check_spelling(text, page_number, lang="uk"):
 
             # Output only page number and the first 5 words of the sentence
             sentence_part = ' '.join(text.split()[:5]) + "..." if len(text.split()) > 5 else text
-            print(f"Grammar issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {sentence_part}")
-
+            # print(f"Grammar issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {sentence_part}")
+            result_text += f"Issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {sentence_part}\n"
     else:
-        print(f"Error: Unable to reach LanguageTool API (status: {response.status_code})")
+        result_text += f"Error: Unable to reach LanguageTool API (status: {response.status_code})"
+        # print(f"Error: Unable to reach LanguageTool API (status: {response.status_code})")
+
+    return result_text
 
 def check_document_spelling(doc):
     in_appendices = False
     content_started = False
-
+    result_text = ""
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
         page_num = paragraph.Range.Information(3)  # Page number from Range.Information(3)
@@ -118,4 +121,5 @@ def check_document_spelling(doc):
             continue
 
             # Pass page number and text to check_spelling function
-        check_spelling(text, page_num)
+        result_text += check_spelling(text, page_num)
+    return result_text if result_text else "No grammar errors found"

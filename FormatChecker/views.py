@@ -4,9 +4,9 @@ from .doc_checker import check_document_rules
 from io import BytesIO
 
 def index(request):
-    return render(request, 'index.html')
+    return render(request, 'main_page.html')
 
-def check_format(request):
+def check_document(request):
     if request.method == "POST":
         uploaded_file = request.FILES.get("document")
         document_part = request.POST.get("document_part")

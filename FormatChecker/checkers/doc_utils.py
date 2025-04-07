@@ -13,8 +13,7 @@ def check_page_attributes(doc):
 
     # Access page setup (which includes margins)
     page_setup = doc.sections[0].PageSetup  # Get page setup
-    errors = []
-
+    result_text = ""
     # Expected values
     expected_margins = {
         "Left": 3.00,
@@ -34,23 +33,27 @@ def check_page_attributes(doc):
 
     for side, expected_value in expected_margins.items():
         if round(actual_margins[side], 2) != expected_value:
-            errors.append(f"{side} Margin is {actual_margins[side]:.2f} cm (should be {expected_value} cm)")
+            result_text += f"{side} Margin is {actual_margins[side]:.2f} cm (should be {expected_value} cm)\n"
+            # errors.append(f"{side} Margin is {actual_margins[side]:.2f} cm (should be {expected_value} cm)")
 
     # Check page size (width and height)
     actual_width = points_to_cm(page_setup.PageWidth)
     actual_height = points_to_cm(page_setup.PageHeight)
 
     if round(actual_width, 2) != expected_page_size[0] or round(actual_height, 2) != expected_page_size[1]:
-        errors.append(f"Page size is {actual_width:.2f} cm x {actual_height:.2f} cm (should be 21 cm x 29.7 cm)")
+        result_text += f"Page size is {actual_width:.2f} cm x {actual_height:.2f} cm (A4 is 21 cm x 29.7 cm)\n"
+        # errors.append(f"Page size is {actual_width:.2f} cm x {actual_height:.2f} cm (should be 21 cm x 29.7 cm for A4)")
 
-    if errors:
-        print("\n".join(errors))
-    else:
-        print("Margins and page size are correct.")
+    return result_text
+    # if errors:
+    #     # print("\n".join(errors))
+    #     return errors
+    # else:
+    #     print("Margins and page size are correct.")
 
-# Function to check if all text is Times New Roman, 14 pt
 def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, exclude_after=None):
     exclude_mode = False  # Track whether we should start excluding text
+    result_text = ""
 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
@@ -69,20 +72,25 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, 
 
         # Skip paragraphs with absurd font sizes
         if font.Size == 9999999.0:
-            print(f"Skipping paragraph with abnormal font size: {text}")
+            result_text += f"Skipping paragraph with abnormal font size: {text}\n"
+            # print(f"Skipping paragraph with abnormal font size: {text}")
             continue
 
         # Check the font name
         if font.Name != expected_font:
-            print(f"Incorrect font: {font.Name} in paragraph: {text}")
+            result_text += f"Incorrect font: {font.Name} in paragraph: {text}\n"
+            # print(f"Incorrect font: {font.Name} in paragraph: {text}")
 
         # Check the font size
         if font.Size != expected_size:
-            print(f"Incorrect font size: {font.Size} pt in paragraph: {text}")
+            result_text += f"Incorrect font size: {font.Size} pt in paragraph: {text}\n"
+            # print(f"Incorrect font size: {font.Size} pt in paragraph: {text}")
+    return result_text
 
 def check_interline_spacing(doc, expected_spacing=1.5):
     found_dodatky = False  # Flag to skip everything after "ДОДАТКИ"
     title_page_checked = False  # Flag to skip the title page if present
+    result_text = ""
 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
@@ -116,8 +124,9 @@ def check_interline_spacing(doc, expected_spacing=1.5):
 
         # Check if spacing is incorrect
         if actual_spacing != expected_spacing:
-            print(
-                f"Incorrect interline spacing on page {page_number}: '{text}' (should be {expected_spacing}, found {actual_spacing})")
+            result_text = f"Incorrect interline spacing on page {page_number}: '{text}' (should be {expected_spacing}, found {actual_spacing})\n"
+            # print(f"Incorrect interline spacing on page {page_number}: '{text}' (should be {expected_spacing}, found {actual_spacing})")
+    return result_text
 
 def check_full_caps_bold(paragraph):
     # Print to debug the paragraph text
@@ -136,6 +145,7 @@ def check_full_caps_bold(paragraph):
     return False
 
 def check_list_formatting(doc, headers):
+    result_text = ""
     for paragraph in doc.Paragraphs:
         paragraph_format = paragraph.Format
         text = paragraph.Range.Text.strip()
@@ -154,16 +164,20 @@ def check_list_formatting(doc, headers):
         if list_type == 3:
             if not is_heading:  # Exclude headings from this indent check
                 if left_indent != 1.75 or first_line_indent != -0.5:
-                    print(f"Incorrect indents in List Type 3 (non-heading) paragraph: {text}")
-                    print(f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm")
+                    result_text += (f"Incorrect indents in List Type 3 (non-heading) paragraph: {text}\n"
+                                    f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm\n")
+                    # print(f"Incorrect indents in List Type 3 (non-heading) paragraph: {text}")
+                    # print(f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm")
             # else:
             #     print(f"Heading found (excluded from List Type 3 check): {text}")
 
         # For List Type 4
         elif list_type == 4:
             if left_indent != 2.25 or first_line_indent != -0.45:
-                print(f"Incorrect indents in List Type 4 paragraph: {text}")
-                print(f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm")
+                result_text += (f"Incorrect indents in List Type 4 paragraph: {text}\n"
+                                f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm\n")
+                # print(f"Incorrect indents in List Type 4 paragraph: {text}")
+                # print(f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm")
 
         # List marker and spacing check (same as your previous implementation)
         list_patterns = [
@@ -176,13 +190,15 @@ def check_list_formatting(doc, headers):
             if match:
                 # Ensure there is exactly one space after the list marker
                 if not re.match(pattern + r'\S', text):
-                    print(f"Incorrect spacing after manually typed list marker in paragraph: {text}")
+                    result_text += f"Incorrect spacing after manually typed list marker in paragraph: {text}\n"
+                    # print(f"Incorrect spacing after manually typed list marker in paragraph: {text}")
                 break  # No need to check other patterns if one matches
+    return result_text
 
 def check_table_format(doc):
     previous_table_num = None  # Store the last detected table number
     table_index = 0  # Track actual table numbers as detected by our logic
-
+    result_text = ""
     paragraphs = list(doc.Paragraphs)  # Convert to a list for indexing
 
     for i, paragraph in enumerate(paragraphs):
@@ -195,7 +211,8 @@ def check_table_format(doc):
 
             # Ensure right indent is 0 (proper alignment check for table number)
             if round(paragraph.Range.ParagraphFormat.RightIndent / 28.35, 2) != 0.0:
-                print(f"Incorrect right indent for table number: '{text}' (should be 0.0 cm).")
+                result_text += f"Incorrect right indent for table number: '{text}' (should be 0.0 cm).\n"
+                # print(f"Incorrect right indent for table number: '{text}' (should be 0.0 cm).")
 
             # Ensure the table name (next row) is CENTERED
             if i + 1 < len(paragraphs):  # Check the next paragraph safely
@@ -203,7 +220,8 @@ def check_table_format(doc):
                 next_text = next_paragraph.Range.Text.strip()
 
                 if next_paragraph.Range.ParagraphFormat.Alignment != 1:  # 1 means centered
-                    print(f"Incorrect alignment for table name: '{next_text}' (should be centered).")
+                    result_text += f"Incorrect alignment for table name: '{next_text}' (should be centered).\n"
+                    # print(f"Incorrect alignment for table name: '{next_text}' (should be centered).")
 
         # Check for table continuation format
         elif text.startswith("Продовження табл."):
@@ -212,7 +230,8 @@ def check_table_format(doc):
                 table_number = match.group(1)  # Extracted number from continuation
                 expected_continuation = f"Продовження табл. {table_number}"
                 if text != expected_continuation:
-                    print(f"Incorrect continuation format: '{text}' (expected '{expected_continuation}')")
+                    result_text += f"Incorrect continuation format: '{text}' (expected '{expected_continuation}')\n"
+                    # print(f"Incorrect continuation format: '{text}' (expected '{expected_continuation}')")
 
     # Checking table width, text formatting, and handling merged cells
     for idx, table in enumerate(doc.Tables, start=1):  # `idx` now directly refers to table count
@@ -240,22 +259,26 @@ def check_table_format(doc):
 
                         font = cell.Range.Font
                         if font.Name != "Times New Roman" or font.Size != 14:
-                            print(
-                                f"Incorrect font or size in Table {idx}: {repr(cell_text)}")  # Use `idx` for actual table count
+                            result_text += f"Incorrect font or size in Table {idx}: {repr(cell_text)}\n"
+                            # print(f"Incorrect font or size in Table {idx}: {repr(cell_text)}")  # Use `idx` for actual table count
 
         except Exception:
-            print(f"Skipping Table {idx} due to merged cell issue.")  # Use `idx` for actual table count
+            result_text += f"Skipping Table {idx} due to merged cells.\n"
+            # print(f"Skipping Table {idx} due to merged cells.")  # Use `idx` for actual table count
 
-    print("Table formatting check completed.")
+    return result_text
+    # print("Table formatting check completed.")
 
-def get_table_page_count(doc):
+def check_table_page_count(doc):
     table_info = {}
+    result_text = ""
 
     for i, table in enumerate(doc.Tables):
         try:
             # Check for tables with no rows or malformed tables
             if table.Rows.Count == 0:
-                print(f"Warning: Table {i+1} has no rows. Skipping this table.")
+                result_text += f"Table {i+1} has no rows. Skipping it.\n"
+                # print(f"Warning: Table {i+1} has no rows. Skipping this table.")
                 table_info[i + 1] = (None, None)
                 continue
 
@@ -279,20 +302,23 @@ def get_table_page_count(doc):
         except Exception as e:
             # Handle the case of vertically merged cells or any other error
             if "Cannot access individual rows" in str(e):
-                print(f"Warning: Table {i+1} has vertically merged cells. Skipping page count.")
+                result_text += f"Table {i+1} has vertically merged cells. Skipping page count check.\n"
+                # print(f"Warning: Table {i+1} has vertically merged cells. Skipping page count.")
             else:
-                print(f"Error processing Table {i+1}: {e}")
+                result_text += f"Error processing Table {i+1}: {e}\n"
+                # print(f"Error processing Table {i+1}: {e}")
             table_info[i + 1] = (None, None)
             continue
 
     # Display results for tables that span multiple pages
     for idx, (start, end) in table_info.items():
         if start != end and start is not None:  # Only print if it spans multiple pages
-            print(f"Table {idx} spans multiple pages ({start} → {end}).")
+            result_text += f"Table {idx} spans multiple pages ({start} → {end}).\n"
+            # print(f"Table {idx} spans multiple pages ({start} → {end}).")
+    return result_text
 
-# Function to check if images are centered and captions are properly formatted.
 def check_images_and_captions(doc):
-    # Loop through images and check captions
+    result_text = ""
     for shape in doc.InlineShapes:
         shape_range = shape.Range
         image_paragraph = shape_range.Paragraphs(1)
@@ -302,7 +328,8 @@ def check_images_and_captions(doc):
 
         # Check if the image is centered
         if image_paragraph.Range.ParagraphFormat.Alignment != 1:
-            print(f"Image on page {page_number} is not centered.")
+            result_text += f"Image on page {page_number} is not centered.\n"
+            # print(f"Image on page {page_number} is not centered.")
 
         # Find the next valid paragraph (skip empty ones)
         next_para = image_paragraph
@@ -320,32 +347,38 @@ def check_images_and_captions(doc):
 
                 # Check if the caption is centered (valid caption check)
                 if next_para.Range.ParagraphFormat.Alignment != 1:
-                    print(
-                        f"Incorrect alignment for caption on page {page_number}: '{caption_text}' (should be centered).")
+                    result_text += f"Incorrect alignment for caption on page {page_number}: '{caption_text}' (should be centered).\n"
+                    # print(f"Incorrect alignment for caption on page {page_number}: '{caption_text}' (should be centered).")
 
                 # Check if caption is bold (should not be)
                 if next_para.Range.Font.Bold:
-                    print(f"Caption is incorrectly bold: '{caption_text}'")
+                    result_text += f"Caption is incorrectly bold: '{caption_text}'\n"
+                    # print(f"Caption is incorrectly bold: '{caption_text}'")
 
                 # Check for unnecessary capitalization
                 # Check if 'Рис.' is wrongly capitalized
                 if caption_text.startswith("Рис.") and not caption_text[0].isupper():
-                    print(f"Caption contains incorrectly capitalized 'Рис.': '{caption_text}'")
+                    result_text += f"Caption contains incorrectly capitalized 'Рис.': '{caption_text}'\n"
+                    # print(f"Caption contains incorrectly capitalized 'Рис.': '{caption_text}'")
 
                 # Check if the rest of the caption text is in full uppercase
                 rest_of_caption = caption_text[caption_text.find("Рис.") + 4:].strip()
                 if rest_of_caption.isupper():
-                    print(f"Caption contains full uppercase text: '{caption_text}'")
+                    result_text += f"Caption contains full uppercase text: '{caption_text}'\n"
+                    # print(f"Caption contains full uppercase text: '{caption_text}'")
 
             # You could handle invalid captions separately here if needed
             # else:
             #     print(
             #         f"Skipping caption because it does not start with 'Рис.' (case-insensitive check): '{caption_text}'")
         else:
+            result_text += "Warning: No caption found after the image."
             print("Warning: No caption found after the image.")
+    return result_text
 
 def check_centered_items_indents_in_document(doc):
     # Loop through all paragraphs in the document
+    result_text = ""
     for paragraph in doc.Paragraphs:
         # Check if the paragraph is centered
         if paragraph.Range.InlineShapes.Count > 0:
@@ -353,21 +386,23 @@ def check_centered_items_indents_in_document(doc):
             if paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
                 # Check if the left and right indents are 0
                 if paragraph.Range.ParagraphFormat.LeftIndent != 0:
-                    print(f"Image on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
+                    result_text += f"Image on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}\n"
+                    # print(f"Image on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
 
                 if paragraph.Range.ParagraphFormat.RightIndent != 0:
-                    print(f"Image on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
+                    result_text +=f"Image on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}\n"
+                    # print(f"Image on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
 
         elif paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
             # Check if the left and right indents are 0
             if paragraph.Range.ParagraphFormat.LeftIndent != 0:
-                print(
-                    f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
+                result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}\n"
+                # print(f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
 
             if paragraph.Range.ParagraphFormat.RightIndent != 0:
-                print(
-                    f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
-
+                result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}\n"
+                # print(f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
+    return result_text
 
 def clean_topic_name(topic, to_upper=False, to_lower=False):
     cleaned_topic = ''.join([i for i in topic if not i.isdigit()]).replace('.', '').replace('\t', '').strip()

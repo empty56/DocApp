@@ -37,7 +37,7 @@ def check_document_rules(file_stream, document_part, formatting_check=True, gram
         if grammar_check:
             results.append(f"Grammar: {ai_utils.check_document_spelling(doc)}")
 
-        return " | ".join(results) if results else "No checks performed"
+        return "".join(results) if results else "No checks performed"
 
     finally:
         doc.Close()
