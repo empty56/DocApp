@@ -4,8 +4,8 @@ from rapidfuzz import fuzz
 
 LANGUAGETOOL_URL = "https://api.languagetool.org/v2/check"
 
-EXCEPTION_WORDS = {"вебзастосунок", "вебзастосунку", "вебзастосунки", "ЗДО",
-                   "КПІ", "Формалізування", "Кросплатформеність", "існуючих"}
+# EXCEPTION_WORDS = ["вебзастосунок", "вебзастосунку", "вебзастосунки", "ЗДО",
+#                    "КПІ", "Формалізування", "Кросплатформеність", "існуючих"]
 
 SIMILARITY_THRESHOLD = 85
 
@@ -20,7 +20,7 @@ def extract_word_from_brackets(text):
     match = re.search(r"«(.+?)»", text)
     return match.group(1) if match else None
 
-def check_spelling(text, page_number, lang="uk"):
+def check_spelling(text, page_number, exception_words, lang="uk"):
     params = {
         "text": text,
         "language": lang,
@@ -59,12 +59,12 @@ def check_spelling(text, page_number, lang="uk"):
             if not error_word:
                 continue
 
-            # Skip if error_word is in EXCEPTION_WORDS**
-            if error_word in EXCEPTION_WORDS:
+            # Skip if error_word is in exception_words**
+            if error_word in exception_words:
                 continue
 
             # Skip if suggested_word is similar to an EXCEPTION_WORD**
-            if any(get_similarity(suggested_word, exception) for exception in EXCEPTION_WORDS):
+            if any(get_similarity(suggested_word, exception) for exception in exception_words):
                 continue
 
             # Ignore capitalization mistakes after `;`**
@@ -91,7 +91,7 @@ def check_spelling(text, page_number, lang="uk"):
 
     return result_text
 
-def check_document_spelling(doc):
+def check_document_spelling(doc, exception_words):
     in_appendices = False
     content_started = False
     result_text = ""
@@ -121,5 +121,5 @@ def check_document_spelling(doc):
             continue
 
             # Pass page number and text to check_spelling function
-        result_text += check_spelling(text, page_num)
+        result_text += check_spelling(text, page_num, exception_words)
     return result_text if result_text else "No grammar errors found"

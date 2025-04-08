@@ -1,40 +1,52 @@
-<form id="doc-check-form" method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <title>Document Checker</title>
+    <link rel="stylesheet" href="{% static 'FormatChecker/css/style.css' %}">
+</head>
+    <body>
+        <div class="container">
+        <h1>Document Format & Grammar Checker</h1>
 
-    <label for="document">Upload Document:</label>
-    <input type="file" name="document" id="document" required><br><br>
+        <form id="doc-check-form" method="POST" enctype="multipart/form-data" action="{% url 'check_document' %}">
+            {% csrf_token %}
 
-    <label for="document_part">Select Document Part:</label>
-    <select name="document_part" id="document_part" required>
-        <option value="tech_assignment">Технічне завдання</option>
-        <option value="main_part">Пояснювальна записка</option>
-        <option value="testing_methodology">Методологія тестування</option>
-        <option value="user_manual">Керівництво користувача</option>
-    </select><br><br>
+            <label for="document">Upload Document:</label>
+            <input type="file" name="document" id="document" required><br><br>
 
-    <input type="checkbox" id="formatting_check" name="formatting_check" checked>
-    <label for="formatting_check">Check Formatting</label><br>
+            <label for="document_part">Select Document Part:</label>
+            <select name="document_part" id="document_part" required>
+                <option value="tech_assignment">Технічне завдання</option>
+                <option value="main_part">Пояснювальна записка</option>
+                <option value="testing_methodology">Методологія тестування</option>
+                <option value="user_manual">Керівництво користувача</option>
+            </select><br><br>
 
-    <input type="checkbox" id="grammar_check" name="grammar_check">
-    <label for="grammar_check">Check Grammar (AI)</label><br><br>
+            <input type="checkbox" id="formatting_check" name="formatting_check" checked>
+            <label for="formatting_check">Check Formatting</label><br>
 
-    <button type="submit">Check Document</button>
-</form>
+            <input type="checkbox" id="grammar_check" name="grammar_check">
+            <label for="grammar_check">Check Grammar (AI)</label><br><br>
 
-<div id="result"></div>
+            <!-- Grammar Exceptions -->
+            <div id="exception-section">
+                <label for="exception_input">Words to ignore (comma-separated):</label><br>
+                <textarea id="exception_input" placeholder="e.g. word1, word2"></textarea><br>
+                <button type="button" id="add_exception">Add Words</button>
 
-<script>
-document.getElementById("doc-check-form").addEventListener("submit", async function(event) {
-    event.preventDefault();
+                <div id="exception-words"></div>
+            </div>
 
-    let formData = new FormData(this);
+            <br><button type="submit">Check Document</button>
+        </form>
 
-    let response = await fetch("{% url 'check_format' %}", {
-        method: "POST",
-        body: formData
-    });
+        <p id="loading">Checking document, please wait...</p>
+        <div id="result" style="white-space: pre-wrap; margin-top: 20px;"></div>
+        <button id="download-btn" style="display: none;">Download Results</button>
 
-    let result = await response.json();
-    document.getElementById("result").innerText = result.message;
-});
-</script>
+        <script src="{% static 'FormatChecker/js/check_document.js' %}"></script>
+        </div>
+    </body>
+</html>

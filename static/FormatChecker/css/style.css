@@ -1,0 +1,65 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1e1e2f; /* Soft dark blue */
+    color: #f0f0f0; /* Light gray text */
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+    min-height: 100vh;
+}
+
+/* Optional: Slight inner container styling for centering */
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: rgba(255, 255, 255, 0.05); /* Slightly see-through card */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+#loading {
+    display: none;
+    font-weight: bold;
+    color: blue;
+}
+
+#exception-section {
+    display: none;
+    margin-top: 10px;
+}
+
+#exception-words {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    gap: 8px;
+}
+
+.exception-item {
+    background-color: #e0e0e0;
+    padding: 6px 10px;
+    border-radius: 16px;
+    position: relative;
+    font-size: 14px;
+}
+
+.exception-item:hover .delete-btn {
+    display: inline;
+}
+
+.delete-btn {
+    display: none;
+    margin-left: 6px;
+    cursor: pointer;
+    color: red;
+    font-weight: bold;
+}
+
+textarea {
+    width: 100%;
+    height: 60px;
+    resize: vertical;
+}

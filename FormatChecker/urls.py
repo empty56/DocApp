@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import index, check_document
+from . import views
 
 urlpatterns = [
-    path("", index, name="index"),
-    path("check-format/", check_document, name="check_format"),
+    path('', views.index, name='index'),
+    path('check/', views.check_document, name='check_document'),
 ]

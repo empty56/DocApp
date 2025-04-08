@@ -5,7 +5,9 @@ from .utils import process_file
 from FormatChecker.checkers import entry_checker, main_part_checker, extras_checker, ai_utils
 
 
-def check_document_rules(file_stream, document_part, formatting_check=True, grammar_check=True):
+def check_document_rules(file_stream, document_part, formatting_check=True, grammar_check=True, exception_words=None):
+    if exception_words is None:
+        exception_words = []
     pythoncom.CoInitialize()
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as temp_file:
@@ -35,7 +37,7 @@ def check_document_rules(file_stream, document_part, formatting_check=True, gram
             results.append(f"Formatting: {checker.check_formatting(doc)}")
 
         if grammar_check:
-            results.append(f"Grammar: {ai_utils.check_document_spelling(doc)}")
+            results.append(f"Grammar: {ai_utils.check_document_spelling(doc, exception_words)}")
 
         return "".join(results) if results else "No checks performed"
 
