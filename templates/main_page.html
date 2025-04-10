@@ -1,11 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-{% load static %}
-<head>
-    <meta charset="UTF-8">
-    <title>Document Checker</title>
-    <link rel="stylesheet" href="{% static 'FormatChecker/css/style.css' %}">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <title>Document Checker</title>
+        <link rel="stylesheet" href="{% static 'FormatChecker/css/style.css' %}">
+    </head>
     <body>
         <div class="container">
         <h1>Document Format & Grammar Checker</h1>
@@ -13,38 +13,55 @@
         <form id="doc-check-form" method="POST" enctype="multipart/form-data" action="{% url 'check_document' %}">
             {% csrf_token %}
 
-            <label for="document">Upload Document:</label>
-            <input type="file" name="document" id="document" required><br><br>
+            <div class="upload-wrapper">
+                <input type="file" id="document" name="document" class="file-input" accept=".docx,.doc">
+                <label for="document" class="upload-btn">
+                    📁Upload file
+                </label>
+                <span class="file-name" id="file-name-display">No file selected</span>
+            </div>
 
-            <label for="document_part">Select Document Part:</label>
-            <select name="document_part" id="document_part" required>
-                <option value="tech_assignment">Технічне завдання</option>
-                <option value="main_part">Пояснювальна записка</option>
-                <option value="testing_methodology">Методологія тестування</option>
-                <option value="user_manual">Керівництво користувача</option>
-            </select><br><br>
+            <div class="doc-part-select">
+                <label for="document_part">Select Document Part:</label>
+                <select id="document_part" name="document_part" required>
+                    <option value="tech_assignment">Технічне завдання</option>
+                    <option value="main_part">Пояснювальна записка</option>
+                    <option value="testing_methodology">Методологія тестування</option>
+                    <option value="user_manual">Керівництво користувача</option>
+                </select>
+            </div>
 
-            <input type="checkbox" id="formatting_check" name="formatting_check" checked>
-            <label for="formatting_check">Check Formatting</label><br>
+            <div class="custom-checkbox">
+              <label>
+                <input type="checkbox" id="formatting_check" name="formatting_check" checked>
+                <span class="checkmark"></span>
+                  Check Formatting
+              </label>
+            </div>
 
-            <input type="checkbox" id="grammar_check" name="grammar_check">
-            <label for="grammar_check">Check Grammar (AI)</label><br><br>
+            <div class="custom-checkbox">
+              <label>
+                <input type="checkbox" id="grammar_check" name="grammar_check">
+                <span class="checkmark"></span>
+                  Check Grammar (AI)
+              </label>
+            </div>
 
-            <!-- Grammar Exceptions -->
             <div id="exception-section">
-                <label for="exception_input">Words to ignore (comma-separated):</label><br>
-                <textarea id="exception_input" placeholder="e.g. word1, word2"></textarea><br>
-                <button type="button" id="add_exception">Add Words</button>
-
-                <div id="exception-words"></div>
+              <label for="exception_input">Words to ignore (comma-separated):</label><br>
+              <div class="textarea-with-button">
+                <textarea id="exception_input" placeholder="e.g. word1, word2"></textarea>
+                <button type="button" id="add_exception">+</button>
+              </div>
+              <div id="exception-words"></div>
             </div>
 
             <br><button type="submit">Check Document</button>
         </form>
 
-        <p id="loading">Checking document, please wait...</p>
+        <div id="loading" class="loader" style="display: none;"></div>
         <div id="result" style="white-space: pre-wrap; margin-top: 20px;"></div>
-        <button id="download-btn" style="display: none;">Download Results</button>
+        <button id="download-btn" class="download-btn">Download Results</button>
 
         <script src="{% static 'FormatChecker/js/check_document.js' %}"></script>
         </div>

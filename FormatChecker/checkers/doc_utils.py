@@ -396,11 +396,11 @@ def check_centered_items_indents_in_document(doc):
         elif paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
             # Check if the left and right indents are 0
             if paragraph.Range.ParagraphFormat.LeftIndent != 0:
-                result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}\n"
+                result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {round(paragraph.Range.ParagraphFormat.LeftIndent,2 )}\n"
                 # print(f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {paragraph.Range.ParagraphFormat.LeftIndent}")
 
             if paragraph.Range.ParagraphFormat.RightIndent != 0:
-                result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}\n"
+                result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {round(paragraph.Range.ParagraphFormat.RightIndent, 2)}\n"
                 # print(f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
     return result_text
 

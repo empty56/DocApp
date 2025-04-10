@@ -10,10 +10,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const addBtn = document.getElementById("add_exception");
     const exceptionWordsDiv = document.getElementById("exception-words");
 
+    const fileInput = document.getElementById("document");
+    const fileNameSpan = document.getElementById("file-name-display");
+
     let exceptionWords = [];
+
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+            fileNameSpan.textContent = fileInput.files[0].name;
+        } else {
+            fileNameSpan.textContent = "No file selected";
+        }
+    });
 
     grammarCheck.addEventListener("change", () => {
         exceptionSection.style.display = grammarCheck.checked ? "block" : "none";
+    });
+
+    exceptionInput.addEventListener("input", function () {
+        exceptionInput.style.height = "auto";
+        exceptionInput.style.height = exceptionInput.scrollHeight + "px";
     });
 
     addBtn.addEventListener("click", () => {
@@ -35,6 +51,8 @@ document.addEventListener("DOMContentLoaded", () => {
             exceptionInput.value = "";
         }
     });
+
+
 
     function renderExceptions() {
         exceptionWordsDiv.innerHTML = "";

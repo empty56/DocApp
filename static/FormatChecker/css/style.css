@@ -2,16 +2,16 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1e1e2f; /* Soft dark blue */
-    color: #f0f0f0; /* Light gray text */
+    color: #f0f0f0;
+    background-color: #09000f;
+    /*background-color: pink;*/
+    background-image: url("https://www.transparenttextures.com/patterns/black-scales.png");;
     background-attachment: fixed;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-image: url('https://www.transparenttextures.com/patterns/black-linen.png');
+    background-repeat: repeat;
+    background-size: auto;
     min-height: 100vh;
 }
 
-/* Optional: Slight inner container styling for centering */
 .container {
     max-width: 800px;
     margin: 40px auto;
@@ -20,30 +20,111 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+h1{
+    text-align: center;
+}
 #loading {
     display: none;
     font-weight: bold;
     color: blue;
 }
-
-#exception-section {
+#exception-section{
     display: none;
-    margin-top: 10px;
+}
+/* Section label */
+#exception-section label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 5px;
+  display: inline-block;
 }
 
-#exception-words {
-    display: flex;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    gap: 8px;
+/* Wrapper */
+.textarea-with-button {
+  position: relative;
+  margin-top: 5px;
+  width: 100%;
 }
+
+/* Self-expanding textarea */
+#exception_input {
+  width: 92%;
+  overflow-y: hidden;
+  padding: 10px 48px 0 12px; /* Add right padding so text doesn't go under + */
+  font-size: 14px;
+  color: #fff;
+  background-color: #1e1e1e;
+  border: 1px solid #555;
+  border-radius: 10px;
+  resize: none;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+  line-height: 1.5;
+}
+
+/* Circular + button */
+#add_exception {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #00e5ff;
+  color: #000;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+#add_exception:hover {
+  background-color: #00bcd4;
+}
+
+/* Word chips */
+#exception-words {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#exception-words .word-chip {
+  background-color: #444;
+  border: 1px solid #00e5ff;
+  color: #fff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+#exception-words .word-chip .remove-chip {
+  margin-left: 8px;
+  color: #ff6666;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+#exception-words .word-chip .remove-chip:hover {
+  color: #ff0000;
+}
+
 
 .exception-item {
-    background-color: #e0e0e0;
+    background-color: #626161;
     padding: 6px 10px;
     border-radius: 16px;
     position: relative;
     font-size: 14px;
+    color: white;
 }
 
 .exception-item:hover .delete-btn {
@@ -62,4 +143,150 @@ textarea {
     width: 100%;
     height: 60px;
     resize: vertical;
+}
+
+button,.upload-btn {
+    background-color: #534d58 !important;  /* force override */
+    color: white !important;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12pt;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: inline-block;
+    align-items: center;
+    gap: 8px;
+    border: none !important;  /* remove unwanted border */
+    text-decoration: none !important;
+    transition: background-color 0.2s ease-in-out;
+}
+
+button:hover,.upload-btn:hover {
+    background-color: #555555;
+}
+
+button::before,.upload-btn::before {
+    font-size: 18px;
+    line-height: 1;
+}
+
+input[type="file"] {
+    display: none; /* Hide native file input */
+}
+input[type="checkbox"] {
+    margin-right: 6px;
+    transform: scale(1.1);
+}
+.file-name {
+    font-size: 18px;
+    font-family: 'Roboto', "Roboto Light", monospace;
+    color: #e0e0e0;
+    margin-top: 4px;
+}
+
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.custom-checkbox label {
+    position: relative;
+    padding-left: 50px; /* was 40px */
+    cursor: pointer;
+    font-size: 16px;
+    user-select: none;
+    color: #eee;
+}
+
+.custom-checkbox input[type="checkbox"] {
+    opacity: 0;
+    position: absolute;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.custom-checkbox .checkmark {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 24px;
+    width: 40px;
+    background-color: #333;
+    border-radius: 34px;
+    transition: 0.3s;
+}
+
+.custom-checkbox .checkmark::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    width: 16px;
+    height: 16px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+/* When checkbox is checked, move the slider */
+.custom-checkbox input:checked + .checkmark::after {
+    transform: translateX(16px);
+    background-color: #00e676;
+}
+
+/* Checked background */
+.custom-checkbox input:checked + .checkmark {
+    background-color: #444;
+}
+
+select {
+    background-color: #222;
+    color: #eee;
+    border: 1px solid #444;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.2s ease;
+    margin-top: 10pt;
+    margin-bottom: 10pt;
+}
+
+select:hover {
+    border-color: #666;
+    background-color: #2a2a2a;
+}
+
+select:focus {
+    border-color: #00e676;
+    box-shadow: 0 0 4px #00e67688;
+}
+
+.doc-part-select label{
+    font-size: 13pt;
+    font-family: cursive;
+}
+
+.download-btn{
+    display: none;
+    margin-top: 10pt;
+}
+
+.loader {
+  border: 6px solid #2c2c2c;
+  border-top: 6px solid #1cb84e;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
