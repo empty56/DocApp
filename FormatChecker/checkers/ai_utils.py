@@ -4,9 +4,6 @@ from rapidfuzz import fuzz
 
 LANGUAGETOOL_URL = "https://api.languagetool.org/v2/check"
 
-# EXCEPTION_WORDS = ["вебзастосунок", "вебзастосунку", "вебзастосунки", "ЗДО",
-#                    "КПІ", "Формалізування", "Кросплатформеність", "існуючих"]
-
 SIMILARITY_THRESHOLD = 85
 
 def extract_abbreviations(text):
@@ -94,7 +91,7 @@ def check_spelling(text, page_number, exception_words, lang="uk"):
 def check_document_spelling(doc, exception_words):
     in_appendices = False
     content_started = False
-    result_text = ""
+    result_text = []
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
         page_num = paragraph.Range.Information(3)  # Page number from Range.Information(3)
@@ -120,6 +117,7 @@ def check_document_spelling(doc, exception_words):
         if paragraph.Range.Tables.Count > 0:
             continue
 
-            # Pass page number and text to check_spelling function
-        result_text += check_spelling(text, page_num, exception_words)
+        checked_row = check_spelling(text, page_num, exception_words)
+        if checked_row:
+            result_text.append(checked_row)
     return result_text if result_text else "No grammar errors found"

@@ -95,14 +95,50 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             let result = await response.json();
+            console.log(result)
             loading.style.display = "none";
+            if(result) {
+                resultDiv.innerHTML = "";
+                if (result.formatting) {
+                    const formattingTitle = document.createElement("h2");
+                    formattingTitle.textContent = "Formatting: ";
+                    resultDiv.appendChild(formattingTitle);
+                    result.formatting.forEach(line => {
+                        if (line) {
+                            const p = document.createElement("p");
+                            p.textContent = line;
+                            p.style.marginBottom = "5px";
+                            resultDiv.appendChild(p);
+                        }
+                    })}
+                if (result.grammar) {
+                    const grammarTitle = document.createElement("h2");
+                    grammarTitle.textContent = "Grammar: ";
+                    resultDiv.appendChild(grammarTitle);
+                    result.grammar.forEach(line => {
+                        if (line) {
+                            const p = document.createElement("p");
+                            p.textContent = line;
+                            p.style.marginBottom = "5px";
+                            resultDiv.appendChild(p);
+                        }
+                    });
+                }
 
-            if (result.message) {
-                resultDiv.innerText = result.message;
+
                 downloadBtn.style.display = "inline-block";
-
                 downloadBtn.onclick = () => {
-                    const blob = new Blob([result.message], { type: "text/plain" });
+                    let content = "";
+
+                    if (result.formatting && result.formatting.length > 0) {
+                        content += "Formatting errors:\n" + result.formatting.join("\n") + "\n\n";
+                    }
+
+                    if (result.grammar && result.grammar.length > 0) {
+                        content += "Grammar errors:\n" + result.grammar.join("\n") + "\n";
+                    }
+
+                    const blob = new Blob([content], { type: "text/plain" });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;

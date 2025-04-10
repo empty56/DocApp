@@ -91,16 +91,17 @@ def check_topics(doc, topics):
     return result_text
 
 def check_formatting(doc):
-    result_text = ""
-    result_text += doc_utils.check_page_attributes(doc)
-    result_text += doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ")
-
     topics = extract_main_part_topics(doc)
-    result_text += check_topics(doc, topics)
+    checks = [
+        doc_utils.check_page_attributes(doc),
+        doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ"),
+        check_topics(doc, topics),
+        doc_utils.check_table_format(doc),
+        doc_utils.check_table_page_count(doc),
+        doc_utils.check_images_and_captions(doc),
+        doc_utils.check_interline_spacing(doc),
+        doc_utils.check_centered_items_indents_in_document(doc),
+    ]
 
-    result_text += doc_utils.check_table_format(doc)
-    result_text += doc_utils.check_table_page_count(doc)
-    result_text += doc_utils.check_images_and_captions(doc)
-    result_text += doc_utils.check_interline_spacing(doc)
-    result_text += doc_utils.check_centered_items_indents_in_document(doc)
-    return result_text
+    result = [item for item in checks if item]
+    return result

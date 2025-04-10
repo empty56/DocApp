@@ -28,5 +28,5 @@ def check_document(request):
 
         from .doc_checker import check_document_rules
         result_text = check_document_rules(file_stream, document_part, formatting_check, grammar_check, exception_words)
-        return JsonResponse({"message": result_text})
+        return JsonResponse(result_text)
     return JsonResponse({"error": "No file uploaded"}, status=400)

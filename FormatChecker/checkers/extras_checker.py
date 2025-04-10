@@ -138,19 +138,15 @@ def check_project_stages_topic(doc, topics):
     return result_text
 
 def check_formatting(doc):
-    result_text = ""
-    result_text += doc_utils.check_page_attributes(doc)
-    result_text += doc_utils.check_font_and_size(doc)
-
-    # Extract topics from the Table of Contents (TOC)
     topics = extract_topics_from_toc(doc, to_upper=True)
-
-    result_text += check_topics(doc, topics)
-
-    result_text += doc_utils.check_list_formatting(doc, topics)
-    result_text +=check_project_stages_topic(doc, topics)
-    result_text +=doc_utils.check_interline_spacing(doc)
-    result_text += doc_utils.check_centered_items_indents_in_document(doc)
-    result_text +=doc_utils.check_table_format(doc)
-    result_text += doc_utils.check_table_page_count(doc)
-    return result_text
+    checks = [doc_utils.check_page_attributes(doc),
+              doc_utils.check_font_and_size(doc),
+              check_topics(doc, topics),
+              doc_utils.check_list_formatting(doc, topics),
+              check_project_stages_topic(doc, topics),
+              doc_utils.check_interline_spacing(doc),
+              doc_utils.check_centered_items_indents_in_document(doc),
+              doc_utils.check_table_format(doc),
+              doc_utils.check_table_page_count(doc)]
+    result = [item for item in checks if item]
+    return result

@@ -31,15 +31,15 @@ def check_document_rules(file_stream, document_part, formatting_check=True, gram
             return {"error": "Unknown document part"}
 
         checker = checkers[document_part]
-        results = []
+        result = {}
 
         if formatting_check:
-            results.append(f"Formatting: {checker.check_formatting(doc)}")
+            result["formatting"] = checker.check_formatting(doc)
 
         if grammar_check:
-            results.append(f"Grammar: {ai_utils.check_document_spelling(doc, exception_words)}")
+            result["grammar"] = ai_utils.check_document_spelling(doc, exception_words)
 
-        return "".join(results) if results else "No checks performed"
+        return result if result else "No checks performed"
 
     finally:
         doc.Close()
