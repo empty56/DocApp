@@ -1,7 +1,7 @@
 import tempfile
 import pythoncom
 import win32com.client as win32
-from .utils import process_file
+
 from FormatChecker.checkers import entry_checker, main_part_checker, extras_checker, ai_utils
 
 
@@ -10,9 +10,12 @@ def check_document_rules(file_stream, document_part, formatting_check=True, gram
         exception_words = []
     pythoncom.CoInitialize()
 
+
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as temp_file:
         temp_file.write(file_stream.getvalue())
         temp_file_path = temp_file.name
+
 
     word_app = win32.Dispatch('Word.Application')
     word_app.Visible = False  # Keep Word application hidden
@@ -46,17 +49,3 @@ def check_document_rules(file_stream, document_part, formatting_check=True, gram
         word_app.Quit()
         pythoncom.CoUninitialize()
 
-
-# def main():
-    # Get the DOCX file path
-    # file_path = "D:/Diploma/Bakalavrat/Docs/TestDoc3.docx"
-    # document_part = "tech_assignment"
-    # process_file(file_path)
-    # check_formatting_rules(file_path, document_part)
-    # file_path = "D:/Diploma/Bakalavrat/Docs/Main_part_copy4.docx"
-    # document_part = "main_part"
-    # process_file(file_path)
-    # check_document_rules(file_path, document_part)
-#
-# if __name__ == "__main__":
-#     main()

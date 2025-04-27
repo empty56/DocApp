@@ -22,11 +22,10 @@ def check_document(request):
                 exception_words = json.loads(exception_words_raw)
             except Exception as e:
                 print("JSON decode error:", e)
-
-        from io import BytesIO
-        file_stream = BytesIO(uploaded_file.read())
-
-        from .doc_checker import check_document_rules
-        result_text = check_document_rules(file_stream, document_part, formatting_check, grammar_check, exception_words)
-        return JsonResponse(result_text)
+        if uploaded_file.name.endswith(".docx") or uploaded_file.name.endswith(".doc"):
+            file_stream = BytesIO(uploaded_file.read())
+            result = check_document_rules(file_stream, document_part, formatting_check, grammar_check, exception_words)
+            return JsonResponse(result)
+        else:
+            return JsonResponse({"error": "Only .doc and .docx files are supported"}, status=400)
     return JsonResponse({"error": "No file uploaded"}, status=400)

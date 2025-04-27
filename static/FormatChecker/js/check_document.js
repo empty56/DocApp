@@ -97,7 +97,14 @@ document.addEventListener("DOMContentLoaded", () => {
             let result = await response.json();
             console.log(result)
             loading.style.display = "none";
-            if(result) {
+            if (result.error){
+                resultDiv.innerHTML = "";
+                const p = document.createElement("p");
+                            console.log(result)
+                            p.textContent = result.error;
+                            resultDiv.appendChild(p);
+            }
+            else if(result && !result.error) {
                 resultDiv.innerHTML = "";
                 if (result.formatting) {
                     const formattingTitle = document.createElement("h2");
@@ -124,7 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     });
                 }
-
 
                 downloadBtn.style.display = "inline-block";
                 downloadBtn.onclick = () => {
