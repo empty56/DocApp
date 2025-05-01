@@ -54,11 +54,17 @@ def check_page_attributes(doc):
 def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, exclude_after=None):
     exclude_mode = False  # Track whether we should start excluding text
     result_text = ""
+    content_started = False
 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
 
         if not text or text in ['\x07', '\x0c']:  # Skip empty/special characters
+            continue
+
+        if not content_started:
+            if "ЗМІСТ" in text.upper():
+                content_started = True
             continue
 
         # If we encounter the "ДОДАТКИ" section, we stop checking
@@ -72,7 +78,7 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, 
 
         # Skip paragraphs with absurd font sizes
         if font.Size == 9999999.0:
-            result_text += f"Skipping paragraph with abnormal font size: {text}\n"
+            # result_text += f"Skipping paragraph with abnormal font size: {text}\n"
             # print(f"Skipping paragraph with abnormal font size: {text}")
             continue
 

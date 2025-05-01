@@ -91,9 +91,8 @@ def check_project_stages_topic(doc, topics):
     stage_index = next((i for i, topic in enumerate(cleaned_topics) if "ЕТАПИ ПРОЄКТУВАННЯ" in topic), None)
 
     if stage_index is None:
-        result_text += "Topic 'ЕТАПИ ПРОЄКТУВАННЯ' not present\n"
-        # print("Topic 'ЕТАПИ ПРОЄКТУВАННЯ' not found.")
-        return result_text
+        # result_text += "Topic 'ЕТАПИ ПРОЄКТУВАННЯ' not present\n"
+        return ""
 
     # Identify the next topic dynamically
     next_topic = cleaned_topics[stage_index + 1] if stage_index + 1 < len(cleaned_topics) else None

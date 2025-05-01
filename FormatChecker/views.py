@@ -2,7 +2,6 @@ from django.http import JsonResponse, FileResponse, HttpResponse
 from django.shortcuts import render
 from .doc_checker import check_document_rules
 from io import BytesIO
-import os
 import json
 def index(request):
     return render(request, 'main_page.html')

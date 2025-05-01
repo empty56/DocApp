@@ -9,7 +9,7 @@ SIMILARITY_THRESHOLD = 85
 def extract_abbreviations(text):
     return set(re.findall(r"\b[А-ЯЇЄҐ]{2,}\b", text))  # Matches 2+ uppercase Ukrainian letters
 
-def get_similarity(word1, word2):
+def is_similar(word1, word2):
     similarity = fuzz.ratio(word1.lower(), word2.lower())
     return similarity >= SIMILARITY_THRESHOLD
 
@@ -48,20 +48,16 @@ def check_spelling(text, page_number, exception_words, lang="uk"):
                 else:
                     suggested_word = error_word  # Fallback to original if no suggestion
 
-            # Skip detected abbreviations**
             if error_word in abbreviations or suggested_word in abbreviations:
                 continue
 
-            # Skip if error_word is empty**
             if not error_word:
                 continue
 
-            # Skip if error_word is in exception_words**
             if error_word in exception_words:
                 continue
 
-            # Skip if suggested_word is similar to an EXCEPTION_WORD**
-            if any(get_similarity(suggested_word, exception) for exception in exception_words):
+            if any(is_similar(suggested_word, exception) for exception in exception_words):
                 continue
 
             # Ignore capitalization mistakes after `;`**
@@ -70,21 +66,17 @@ def check_spelling(text, page_number, exception_words, lang="uk"):
                 if before_offset and before_offset[-1] == ";":
                     continue  # Ignore capitalization mistake if previous sentence ends with ';'
 
-                # Additional check to avoid false positives for lowercase verbs**
                 if error_word.lower() == error_word:  # Word starts in lowercase (e.g., a verb)
                     continue
 
-            # Skip "Знайдено потенційну орфографічну помилку" with empty error word**
             if (rule_desc == "Знайдено потенційну орфографічну помилку." or rule_desc== "Це слово є жаргонним") and not error_word.strip():
                 continue  # Skip if the error word is empty
 
-            # Output only page number and the first 5 words of the sentence
             sentence_part = ' '.join(text.split()[:5]) + "..." if len(text.split()) > 5 else text
-            # print(f"Grammar issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {sentence_part}")
+
             result_text += f"Issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {sentence_part}\n"
     else:
         result_text += f"Error: Unable to reach LanguageTool API (status: {response.status_code})"
-        # print(f"Error: Unable to reach LanguageTool API (status: {response.status_code})")
 
     return result_text
 
@@ -93,31 +85,34 @@ def check_document_spelling(doc, exception_words):
     content_started = False
     result_text = []
     for paragraph in doc.Paragraphs:
-        text = paragraph.Range.Text.strip()
-        page_num = paragraph.Range.Information(3)  # Page number from Range.Information(3)
+        try:
+            text = paragraph.Range.Text.strip()
+            page_num = paragraph.Range.Information(3)  # Page number from Range.Information(3)
 
-        if not text:
-            continue  # Skip empty rows
+            if not text:
+                continue  # Skip empty rows
 
-        # if "ЗМІСТ" in text.upper():  # Skip "ЗМІСТ" section
-        #     continue
+            if not content_started:
+                if "ЗМІСТ" in text.upper():
+                    content_started = True
+                continue
 
-        if not content_started:
-            if "ЗМІСТ" in text.upper():
-                content_started = True
+            if text.upper().strip() == "ДОДАТКИ":
+                in_appendices = True
+                continue
+
+            if in_appendices:
+                continue  # Skip everything after "ДОДАТКИ"
+
+            if paragraph.Range.Tables.Count > 0:
+                continue
+
+            checked_row = check_spelling(text, page_num, exception_words)
+            if checked_row:
+                result_text.append(checked_row)
+
+        except Exception as e:
+            print(e)
             continue
 
-        if text.upper().strip() == "ДОДАТКИ":
-            in_appendices = True
-            continue
-
-        if in_appendices:
-            continue  # Skip everything after "ДОДАТКИ"
-
-        if paragraph.Range.Tables.Count > 0:
-            continue
-
-        checked_row = check_spelling(text, page_num, exception_words)
-        if checked_row:
-            result_text.append(checked_row)
-    return result_text if result_text else "No grammar errors found"
+    return result_text if result_text else ["No grammar errors found"]
