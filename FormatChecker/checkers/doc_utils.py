@@ -97,6 +97,7 @@ def check_interline_spacing(doc, expected_spacing=1.5):
     found_dodatky = False  # Flag to skip everything after "ДОДАТКИ"
     title_page_checked = False  # Flag to skip the title page if present
     result_text = ""
+    content_started = False
 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
@@ -105,12 +106,10 @@ def check_interline_spacing(doc, expected_spacing=1.5):
         if not text:
             continue
 
-        # Skip the title page (assumed to be the first page)
-        if not title_page_checked:
-            page_number = paragraph.Range.Information(3)  # 3 = wdActiveEndPageNumber
-            if page_number == 1:
-                continue  # Skip title page content
-            title_page_checked = True  # Mark title page as checked
+        if not content_started:
+            if "ЗМІСТ" in text.upper():
+                content_started = True
+            continue
 
         # Detect "ДОДАТКИ" section and stop checking after it
         if text == "ДОДАТКИ":
@@ -310,8 +309,8 @@ def check_table_page_count(doc):
             if "Cannot access individual rows" in str(e):
                 result_text += f"Table {i+1} has vertically merged cells. Skipping page count check.\n"
                 # print(f"Warning: Table {i+1} has vertically merged cells. Skipping page count.")
-            else:
-                result_text += f"Error processing Table {i+1}: {e}\n"
+            # else:
+            #     result_text += f"Error processing Table {i+1}: {e}\n"
                 # print(f"Error processing Table {i+1}: {e}")
             table_info[i + 1] = (None, None)
             continue
@@ -386,8 +385,10 @@ def check_centered_items_indents_in_document(doc):
     # Loop through all paragraphs in the document
     result_text = ""
     for paragraph in doc.Paragraphs:
-        # Check if the paragraph is centered
+
+
         if paragraph.Range.InlineShapes.Count > 0:
+
             # Check if the image is centered (using paragraph alignment)
             if paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
                 # Check if the left and right indents are 0
@@ -400,6 +401,10 @@ def check_centered_items_indents_in_document(doc):
                     # print(f"Image on page {paragraph.Range.Information(3)} has incorrect right indent: {paragraph.Range.ParagraphFormat.RightIndent}")
 
         elif paragraph.Range.ParagraphFormat.Alignment == 1:  # Centered alignment
+
+            text = paragraph.Range.Text.strip()
+            if not text or text in ['\x07', '\x0c']:
+                continue
             # Check if the left and right indents are 0
             if paragraph.Range.ParagraphFormat.LeftIndent != 0:
                 result_text += f"Centered paragraph: '{paragraph.Range.Text.strip()}' on page {paragraph.Range.Information(3)} has incorrect left indent: {round(paragraph.Range.ParagraphFormat.LeftIndent,2 )}\n"
