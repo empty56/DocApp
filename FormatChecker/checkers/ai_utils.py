@@ -1,87 +1,79 @@
 import requests
 import re
-from rapidfuzz import fuzz
+import Levenshtein
 
 LANGUAGETOOL_URL = "https://api.languagetool.org/v2/check"
 
 SIMILARITY_THRESHOLD = 85
 
 def extract_abbreviations(text):
-    return set(re.findall(r"\b[А-ЯЇЄҐ]{2,}\b", text))  # Matches 2+ uppercase Ukrainian letters
+    return set(re.findall(r"\b[А-ЯЇЄҐ]{2,}\b", text))
+
+def clean_word(word):
+    # Remove common non-alphabetic characters (e.g. dashes, punctuation, spaces)
+    return re.sub(r"[^\wа-яА-ЯїЇєЄґҐ]", "", word).lower()
 
 def is_similar(word1, word2):
-    similarity = fuzz.ratio(word1.lower(), word2.lower())
-    return similarity >= SIMILARITY_THRESHOLD
+    word1 = clean_word(word1.lower())
+    word2 = clean_word(word2.lower())
+    dist = Levenshtein.distance(word1, word2)
+    max_len = max(len(word1), len(word2))
+
+    if max_len <= 4:
+        max_dist = 1
+    elif max_len <= 7:
+        max_dist = 2
+    else:
+        max_dist = 3
+    return dist <= max_dist
 
 def extract_word_from_brackets(text):
     match = re.search(r"«(.+?)»", text)
     return match.group(1) if match else None
 
 def check_spelling(text, page_number, exception_words, lang="uk"):
-    params = {
-        "text": text,
-        "language": lang,
-    }
-    result_text = ""
-    response = requests.post(LANGUAGETOOL_URL, data=params)
+    response = requests.post(LANGUAGETOOL_URL, data={"text": text, "language": lang})
+    if response.status_code != 200:
+        return f"Error: Unable to reach LanguageTool API (status: {response.status_code})"
 
-    if response.status_code == 200:
-        matches = response.json().get("matches", [])
+    matches = response.json().get("matches", [])
+    if not matches:
+        return ""
 
-        if not matches:
-            return ""  # No issues found
+    abbreviations = extract_abbreviations(text)
+    result_lines = []
 
-        abbreviations = extract_abbreviations(text)  # Get document-specific abbreviations
+    for match in matches:
+        rule_id = match.get("rule", {}).get("id", "")
+        rule_desc = match.get("message", "Unknown issue")
+        ctx = match.get("context", {})
+        error_word = ctx.get("text", "")[match.get("offset", 0):match.get("offset", 0) + match.get("length", 0)].strip()
 
-        for match in matches:
-            rule_desc = match.get("message", "Unknown issue")
-            error_word = match["context"]["text"][match["offset"]:match["offset"] + match["length"]].strip()
+        # Determine suggested word
+        suggested_word = extract_word_from_brackets(rule_desc)
+        if not suggested_word:
+            suggested_word = match.get("replacements", [{}])[0].get("value", error_word)
 
-            # 🔹 Extract word from brackets in rule_desc
-            suggested_word = extract_word_from_brackets(rule_desc)
-
-            # If no word in brackets, fallback to LanguageTool's suggested correction
-            if not suggested_word:
-                suggested_replacements = match.get("replacements", [])
-                if suggested_replacements:
-                    suggested_word = suggested_replacements[0]["value"]
-                else:
-                    suggested_word = error_word  # Fallback to original if no suggestion
-
-            if error_word in abbreviations or suggested_word in abbreviations:
+        # Skip checks
+        if not error_word:
+            continue
+        if error_word in abbreviations or suggested_word in abbreviations:
+            continue
+        if error_word in exception_words or any(is_similar(suggested_word, ex) for ex in exception_words):
+            continue
+        if rule_id == "UPPERCASE_SENTENCE_START":
+            before = text[:match.get("offset", 0)].strip()
+            if before.endswith(";") or error_word.islower():
                 continue
+        if rule_desc in {"Знайдено потенційну орфографічну помилку.", "Це слово є жаргонним"} and not error_word:
+            continue
 
-            if not error_word:
-                continue
+        snippet = ' '.join(text.split()[:5]) + "..." if len(text.split()) > 5 else text
+        result_lines.append(f"Issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {snippet}")
 
-            if error_word in exception_words:
-                continue
-
-            if any(is_similar(suggested_word, exception) for exception in exception_words):
-                continue
-
-            # Ignore capitalization mistakes after `;`**
-            if match["rule"]["id"] == "UPPERCASE_SENTENCE_START":
-                before_offset = text[:match["offset"]].strip()
-                if before_offset and before_offset[-1] == ";":
-                    continue  # Ignore capitalization mistake if previous sentence ends with ';'
-
-                if error_word.lower() == error_word:  # Word starts in lowercase (e.g., a verb)
-                    continue
-
-            if (rule_desc == "Знайдено потенційну орфографічну помилку." or rule_desc== "Це слово є жаргонним") and not error_word.strip():
-                continue  # Skip if the error word is empty
-
-            sentence_part = ' '.join(text.split()[:5]) + "..." if len(text.split()) > 5 else text
-
-            result_text += f"Issue on page {page_number}: {rule_desc} → '{error_word}' (suggested: {suggested_word}) in sentence: {sentence_part}\n"
-    else:
-        result_text += f"Error: Unable to reach LanguageTool API (status: {response.status_code})"
-
-    return result_text
+    return "\n".join(result_lines)
 
 def check_document_spelling(doc, exception_words):
-    in_appendices = False
     content_started = False
     result_text = []
     for paragraph in doc.Paragraphs:
@@ -90,22 +82,18 @@ def check_document_spelling(doc, exception_words):
             page_num = paragraph.Range.Information(3)  # Page number from Range.Information(3)
 
             if not text:
-                continue  # Skip empty rows
+                continue
 
-            if not content_started:
+            elif paragraph.Range.Tables.Count > 0:
+                continue
+
+            elif not content_started:
                 if "ЗМІСТ" in text.upper():
                     content_started = True
                 continue
 
             if text.upper().strip() == "ДОДАТКИ":
-                in_appendices = True
-                continue
-
-            if in_appendices:
-                continue  # Skip everything after "ДОДАТКИ"
-
-            if paragraph.Range.Tables.Count > 0:
-                continue
+                break
 
             checked_row = check_spelling(text, page_num, exception_words)
             if checked_row:

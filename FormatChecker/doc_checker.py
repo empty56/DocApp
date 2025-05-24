@@ -2,7 +2,7 @@ import tempfile
 import pythoncom
 import win32com.client as win32
 
-from FormatChecker.checkers import entry_checker, main_part_checker, extras_checker, ai_utils
+from FormatChecker.checkers import main_part_checker, extras_checker, ai_utils
 
 def is_win32_doc_empty(doc):
     try:
@@ -28,7 +28,6 @@ def check_document_rules(file_stream, document_part, formatting_check=True, gram
     doc = word_app.Documents.Open(temp_file_path)
 
     checkers = {
-        "entry": entry_checker,
         "tech_assignment": extras_checker,
         "testing_methodology": extras_checker,
         "user_manual": extras_checker,

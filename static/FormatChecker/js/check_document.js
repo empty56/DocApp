@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileInput = document.getElementById("document");
     const fileNameSpan = document.getElementById("file-name-display");
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+
     let exceptionWords = [];
 
     fileInput.addEventListener("change", () => {
@@ -78,6 +80,9 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Checking...";
+
         loading.style.display = "block";
         resultDiv.innerText = "";
         downloadBtn.style.display = "none";
@@ -97,6 +102,10 @@ document.addEventListener("DOMContentLoaded", () => {
             let result = await response.json();
             console.log(result)
             loading.style.display = "none";
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Check Document";
+
             if (result.error){
                 resultDiv.innerHTML = "";
                 const p = document.createElement("p");
@@ -158,6 +167,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             loading.style.display = "none";
             resultDiv.innerText = "Error: " + error.message;
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Check Document";
         }
     });
 });

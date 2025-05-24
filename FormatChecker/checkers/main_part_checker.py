@@ -74,20 +74,15 @@ def check_topics(doc, topics):
             result = doc_utils.check_full_caps_bold(paragraph)
             if not result:
                 result_text += f"Incorrect formatting for main topic: {text}\n"
-                # print(f"Incorrect formatting for main topic: {text}")
 
         elif cleaned_text.lower() in cleaned_subtopics:
             is_bold = paragraph.Range.Font.Bold == -1  # Check for bold (Word uses -1 for bold)
-
-            # Ensure correct bold for subtopics
             if not is_bold:
                 result_text += f"Incorrect formatting for subtopic: {text} (should be bold)\n"
-                # print(f"Incorrect formatting for subtopic: {text} (should be bold)")
+            first_letter_match = re.search(r'\w', subtopic_text)
 
-            # **Fix: Check capitalization only on the extracted subtopic text**
-            if subtopic_text != subtopic_text.capitalize():
+            if first_letter_match and not first_letter_match.group(0).isupper():
                 result_text += f"Incorrect capitalization for subtopic: {text} (should start with a capital letter)\n"
-                # print(f"Incorrect capitalization for subtopic: {text} (should start with a capital letter)")
     return result_text
 
 def check_formatting(doc):

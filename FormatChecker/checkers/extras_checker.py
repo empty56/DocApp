@@ -128,12 +128,10 @@ def check_project_stages_topic(doc, topics):
             # Ensure all rows have the same left indent (either 0 or 1.25)
             if left_indent != expected_left_indent:
                 result_text += f"Left Indent: '{text}' ({left_indent:.2f} cm). All left indents have to be same and either 0.00 or 1.25 cm\n"
-                # print(f"Left Indent: '{text}' ({left_indent:.2f} cm). All left indents have to be same and either 0.00 or 1.25 cm")
 
             # Right indent should always be 0.00 cm
             if right_indent != 0.00:
                 result_text += f"Right Indent: {text} ({right_indent:.2f} cm) (should be 0.00 cm)\n"
-                # print(f"Right Indent: {text} ({right_indent:.2f} cm) (should be 0.00 cm)")
     return result_text
 
 def check_formatting(doc):
