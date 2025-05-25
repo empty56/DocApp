@@ -8,7 +8,6 @@ This is a web-based document formatting and grammar checker built with Django. I
 - Grammar checking via LanguageTool API (with exception words)
 - File upload with styled UI
 - Download results as .txt
-- Requires Microsoft Word (via COM interface)
 
 ## Requirements
 
@@ -22,7 +21,7 @@ This is a web-based document formatting and grammar checker built with Django. I
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/yourname/format-checker.git
+git clone https://github.com/yourname/DocApp.git
 cd format-checker
 
 # 2. Create a virtual environment
@@ -33,9 +32,9 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 # 4. Create .env and set up your values
-SECRET_KEY=your-secret-key-here # SECURITY WARNING: keep the secret key used in production secret!
-DEBUG=True # SECURITY WARNING: don't run with debug turned on in production!
-ALLOWED_HOSTS=your-values # for local machine: 127.0.0.1,localhost
+SECRET_KEY=your-secret-key-here     # SECURITY WARNING: keep the secret key used in production secret!
+DEBUG=True                          # SECURITY WARNING: don't run with debug turned on in production!
+ALLOWED_HOSTS=your-values           # for local machine: 127.0.0.1,localhost
 
 # 5. Run the server
 python manage.py runserver
