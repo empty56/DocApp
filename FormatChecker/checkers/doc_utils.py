@@ -1,5 +1,6 @@
 import re
 import math
+from collections import defaultdict
 
 wdHeaderFooterPrimary = 1
 wdListBullet = 2  # For bullet lists
@@ -65,7 +66,6 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, 
         # Skip paragraphs with absurd font sizes
         if font.Size == 9999999.0:
             # result_text += f"Skipping paragraph with abnormal font size: {text}\n"
-            # print(f"Skipping paragraph with abnormal font size: {text}")
             continue
 
         # Check the font name
@@ -130,43 +130,99 @@ def check_full_caps_bold(paragraph):
         return True
     return False
 
+def format_list_block_error(list_type, texts, indent_summary):
+    block = "\n    ".join(texts)
+    return (
+        f"Incorrect indents in List Type {list_type} block:\n"
+        f"    {block}\n"
+        f"    {indent_summary}\n\n"
+    )
+
+
+def check_list_indents(list_type, marker_number, left_indent, first_line_indent):
+    total_indent = round(left_indent + first_line_indent, 2)
+
+    # Adjust expected ranges based on marker_number
+    if marker_number >= 10:
+        type3_range = (0.95, 1.05)
+        type4_range = (1.25, 1.50)
+    else:
+        type3_range = (1.20, 1.30)
+        type4_range = (1.50, 1.75)
+
+    if list_type == 3:
+        return not (type3_range[0] <= total_indent <= type3_range[1])
+    elif list_type == 4:
+        return not (type3_range[0] <= total_indent <= type3_range[1] or
+                    type4_range[0] <= total_indent <= type4_range[1])
+    return False
+
 def check_list_formatting(doc, headers):
     result_text = ""
+    current_group = []
+    current_type = None
+
     for paragraph in doc.Paragraphs:
-        paragraph_format = paragraph.Format
-        text = paragraph.Range.Text.strip()
-        left_indent = round(paragraph_format.LeftIndent / 28.35, 2)  # Convert from points to cm
-        first_line_indent = round(paragraph_format.FirstLineIndent / 28.35, 2) # Convert from points to cm
         list_type = paragraph.Range.ListFormat.ListType
-        # Skip if it's not a list
-        if list_type == 0:
-            continue
-        # Check if it's a heading
-        is_heading = text in headers or (paragraph.Range.Font.Bold == True and paragraph.Range.Text.isupper())
-        # For List Type 3
-        if list_type == 3:
-            if not is_heading:  # Exclude headings from this indent check
-                if left_indent != 1.75 or first_line_indent != -0.5:
-                    result_text += (f"Incorrect indents in List Type 3 (non-heading) paragraph: {text}\n"
-                                    f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm\n")
-        # For List Type 4
-        elif list_type == 4:
-            if left_indent != 2.25 or first_line_indent != -0.45:
-                result_text += (f"Incorrect indents in List Type 4 paragraph: {text}\n"
-                                f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm\n")
+        text = paragraph.Range.Text.strip()
+        is_heading = text in headers or paragraph.Range.Font.Bold
+
+        if list_type in [3, 4] and not is_heading:
+            # Continue current group if same type
+            if current_type == list_type or current_type is None:
+                current_group.append(paragraph)
+                current_type = list_type
+            else:
+                # Check and reset group
+                result_text += process_list_group(current_group, current_type)
+                current_group = [paragraph]
+                current_type = list_type
+        else:
+            # End of group, check and reset
+            if current_group:
+                result_text += process_list_group(current_group, current_type)
+                current_group = []
+                current_type = None
+
+    # Check remaining group
+    if current_group:
+        result_text += process_list_group(current_group, current_type)
+
+    # Manual list marker spacing check (per paragraph)
+    for paragraph in doc.Paragraphs:
+        text = paragraph.Range.Text.strip()
         list_patterns = [
-            r'^\d+\.\s',  # Number with dot (e.g., 1. )
-            r'^\d+\)\s',  # Number with bracket (e.g., 1) )
-            r'^[*•–-]\s',  # Symbols (e.g., *, •, – (long dash), - (short dash))
+            r'^\d+\.\s',     # 1.
+            r'^\d+\)\s',     # 1)
+            r'^[*•–-]\s',    # *, •, –, -
         ]
         for pattern in list_patterns:
-            match = re.match(pattern, text)
-            if match:
-                # Ensure there is exactly one space after the list marker
+            if re.match(pattern, text):
                 if not re.match(pattern + r'\S', text):
-                    result_text += f"Incorrect spacing after manually typed list marker in paragraph: {text}\n"
+                    result_text += f"Incorrect spacing after list marker in paragraph: {text}\n"
                 break
+
     return result_text
+
+def process_list_group(paragraphs, list_type):
+    for paragraph in paragraphs:
+        para_format = paragraph.Format
+        text = paragraph.Range.Text.strip()
+        left_indent = round(para_format.LeftIndent / 28.35, 2)
+        first_line_indent = round(para_format.FirstLineIndent / 28.35, 2)
+
+        marker = paragraph.Range.ListFormat.ListString.strip()
+        marker_number_match = re.match(r'^(\d+)[.)]', marker)
+        marker_number = int(marker_number_match.group(1)) if marker_number_match else 0
+
+        if check_list_indents(list_type, marker_number, left_indent, first_line_indent):
+            page = paragraph.Range.Information(3)  # wdActiveEndPageNumber
+            return (
+                f"Incorrect indents in List Type {list_type} block on page {page}.\n"
+                f"Example: {text}\n"
+                f"Left Indent: {left_indent:.2f} cm, First Line Indent: {first_line_indent:.2f} cm\n\n"
+            )
+    return ""
 
 def check_table_format(doc):
     result_text = ""
@@ -246,8 +302,8 @@ def check_table_page_count(doc):
 
         except Exception as e:
             # Handle the case of vertically merged cells or any other error
-            if "Cannot access individual rows" in str(e):
-                result_text += f"Table {i+1} has vertically merged cells. Skipping page count check.\n"
+            # if "Cannot access individual rows" in str(e):
+            #     result_text += f"Table {i+1} has vertically merged cells. Skipping page count check.\n"
             table_info[i + 1] = (None, None)
             continue
     # Display results for tables that span multiple pages

@@ -69,7 +69,6 @@ def check_topics(doc, topics):
         subtopic_match = re.match(r"[\d.]+\s*(.*)", text)
         subtopic_text = subtopic_match.group(1) if subtopic_match else text
 
-        # Now we're in the main content, check topic formatting
         if cleaned_text.upper() in cleaned_main_topics:
             result = doc_utils.check_full_caps_bold(paragraph)
             if not result:
@@ -85,12 +84,26 @@ def check_topics(doc, topics):
                 result_text += f"Incorrect capitalization for subtopic: {text} (should start with a capital letter)\n"
     return result_text
 
+def flatten_main_headers(headers_dict):
+    flat_headers = []
+
+    # Combine and normalize both main and subtopics
+    for topic in headers_dict.get("main_topics", []):
+        flat_headers.append(topic.strip().upper())
+
+    for subtopic in headers_dict.get("subtopics", []):
+        flat_headers.append(subtopic.strip())
+
+    return flat_headers
+
 def check_formatting(doc):
     topics = extract_main_part_topics(doc)
+    topics_for_list = flatten_main_headers(topics)
     checks = [
         doc_utils.check_page_attributes(doc),
         doc_utils.check_font_and_size(doc, exclude_after="ДОДАТКИ"),
         check_topics(doc, topics),
+        doc_utils.check_list_formatting(doc, topics_for_list),
         doc_utils.check_table_format(doc),
         doc_utils.check_table_page_count(doc),
         doc_utils.check_images_and_captions(doc),
