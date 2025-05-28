@@ -148,7 +148,7 @@ def check_list_indents(list_type, marker_number, left_indent, first_line_indent)
         type4_range = (1.25, 1.50)
     else:
         type3_range = (1.20, 1.30)
-        type4_range = (1.50, 1.75)
+        type4_range = (1.50, 1.8)
 
     if list_type == 3:
         return not (type3_range[0] <= total_indent <= type3_range[1])
@@ -161,12 +161,25 @@ def check_list_formatting(doc, headers):
     result_text = ""
     current_group = []
     current_type = None
+    started = False
 
     for paragraph in doc.Paragraphs:
+        if paragraph.Range.Tables.Count > 0:
+            continue
         list_type = paragraph.Range.ListFormat.ListType
         text = paragraph.Range.Text.strip()
-        is_heading = text in headers or paragraph.Range.Font.Bold
 
+        if not started:
+            cleaned = re.sub(r'[.\u2026•·⋯⋅]{2,}', '', text)  # Remove dots/ellipsis
+            cleaned = re.sub(r'^\d+[.)]\s*', '', cleaned)  # Remove leading numbers like "1. " or "1) "
+            cleaned = re.sub(r'\s*\d{1,3}$', '', cleaned)  # Remove trailing page number
+            cleaned = cleaned.strip()
+
+            if cleaned in headers:
+                started = True
+            continue  # Skip until TOC ends
+
+        is_heading = text in headers or paragraph.Range.Font.Bold
         if list_type in [3, 4] and not is_heading:
             # Continue current group if same type
             if current_type == list_type or current_type is None:
@@ -344,9 +357,8 @@ def check_images_and_captions(doc):
                 rest_of_caption = caption_text[caption_text.find("Рис.") + 4:].strip()
                 if rest_of_caption.isupper():
                     result_text += f"Caption contains full uppercase text: '{caption_text}'\n"
-        else:
-            result_text += "Warning: No caption found after the image."
-            print("Warning: No caption found after the image.")
+        # else:
+        #     result_text += "Warning: No caption found after the image."
     return result_text
 
 def check_centered_items_indents_in_document(doc):

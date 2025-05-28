@@ -47,29 +47,40 @@ def extract_topics_from_toc(doc, to_upper=False):
             text = toc_entry.Range.Text.strip()
             if text:
                 topic_text = doc_utils.clean_topic_name(text, to_upper)
-                if topic_text:  # Ensure it's not empty after cleaning
+                if topic_text:
                     topics.append(topic_text)
-
     if topics:
-        return topics  # Return if standard TOC extraction worked
+        return topics
 
     # If no TOC found, try extracting topics manually
     for para in doc.Paragraphs:
         if "ЗМІСТ" in para.Range.Text.strip():
-            # print("Found 'ЗМІСТ'. Extracting topics...")
-            current = para.Range.Next(Unit=3)  # Move to next paragraph
+            seen = set()
+            current = para.Range.Next(Unit=3)
+            while current:
+                raw_text = current.Text.strip()
+                # Break if line is completely empty
+                if not raw_text:
+                    break
+                # Remove dot leaders and trailing page numbers
+                cleaned = re.sub(r'[.\u2026•·⋯⋅]{2,}', '', raw_text)
+                cleaned = re.sub(r'\s*\d{1,3}$', '', cleaned).strip()
 
-            while current and current.Text.strip():
-                topic_text = doc_utils.clean_topic_name(current.Text.strip(), to_upper)
-
-                # **Filter out empty or non-topic lines (like dots, page numbers)**
-                if topic_text and not re.match(r'^[\d.\s]*$', topic_text):
+                topic_text = doc_utils.clean_topic_name(cleaned, to_upper)
+                # Stop if we've already seen the topic (likely body started)
+                if topic_text in seen:
+                    break
+                # Ignore lines that are mostly digits or dots
+                if re.match(r'^[\d.\s]*$', topic_text):
+                    current = current.Next(Unit=3)
+                    continue
+                # Stop if text is too long (likely not a topic)
+                if len(topic_text.split()) > 10:
+                    break
+                if topic_text:
                     topics.append(topic_text)
-
-                current = current.Next(Unit=3)  # Move to next paragraph
-
-            break  # Stop searching after first "ЗМІСТ"
-
+                    seen.add(topic_text)
+                current = current.Next(Unit=3)
     return topics
 
 def get_paragraph_indents(paragraph):
