@@ -19,22 +19,8 @@ This is a web-based document formatting and grammar checker built with Django. I
 
 ## Setup
 
-```bash
-# 1. Clone the repo
-git clone https://github.com/yourname/DocApp.git
-cd format-checker
+# 1. Download zip with this repository and unzip it where you want
 
-# 2. Create a virtual environment
-python -m venv venv
-venv\Scripts\activate
+# 2. Run setup.bat to setup venv libraries for program
 
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Create .env and set up your values
-SECRET_KEY=your-secret-key-here     # SECURITY WARNING: keep the secret key used in production secret!
-DEBUG=True                          # SECURITY WARNING: don't run with debug turned on in production!
-ALLOWED_HOSTS=your-values           # for local machine: 127.0.0.1,localhost
-
-# 5. Run the server
-python manage.py runserver
+# 3. Use launch.bat to launch program. Close console to exit program

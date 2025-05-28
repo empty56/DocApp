@@ -2,6 +2,7 @@ import re
 import math
 from collections import defaultdict
 
+
 wdHeaderFooterPrimary = 1
 wdListBullet = 2  # For bullet lists
 wdListNumber = 3  # For numbered lists
@@ -48,7 +49,7 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, 
     for paragraph in doc.Paragraphs:
         text = paragraph.Range.Text.strip()
 
-        if not text or text in ['\x07', '\x0c']:  # Skip empty/special characters
+        if not text or text in ['\x07', '\x0c']:
             continue
 
         if not content_started:
@@ -56,27 +57,35 @@ def check_font_and_size(doc, expected_font="Times New Roman", expected_size=14, 
                 content_started = True
             continue
 
-        # If we encounter the "ДОДАТКИ" section, we stop checking
         if exclude_after and exclude_after in text.upper():
             break
 
-
         font = paragraph.Range.Font
 
-        # Skip paragraphs with absurd font sizes
         if font.Size == 9999999.0:
-            # result_text += f"Skipping paragraph with abnormal font size: {text}\n"
             continue
 
-        # Check the font name
-        if font.Name != expected_font:
-            result_text += f"Incorrect font: {font.Name} in paragraph: {text}\n"
-            # print(f"Incorrect font: {font.Name} in paragraph: {text}")
 
-        # Check the font size
-        if font.Size != expected_size:
-            result_text += f"Incorrect font size: {font.Size} pt in paragraph: {text}\n"
-            # print(f"Incorrect font size: {font.Size} pt in paragraph: {text}")
+        valid_fonts = [
+            (expected_font, expected_size)
+        ]
+        if paragraph.Range.Tables.Count > 0:
+            valid_fonts += [
+                ("Courier New", 10),
+                ("Consolas", 10)
+            ]
+
+        current_font = font.Name
+        current_size = int(round(font.Size))
+
+
+
+        if (current_font, current_size) not in valid_fonts:
+            result_text += (
+                f"Incorrect font or size in paragraph: '{text}'\n"
+                f"Font: {current_font}, Size: {current_size} pt\n"
+            )
+
     return result_text
 
 def check_interline_spacing(doc, expected_spacing=1.5):
@@ -282,12 +291,6 @@ def check_table_format(doc):
                     if cell_text and cell_text not in checked_cells:
                         checked_cells.add(cell_text)
 
-                        font = cell.Range.Font
-                        if font.Name != "Times New Roman" or font.Size != 14:
-                            result_text += (
-                                f"Incorrect font or size in Table {idx} cell: '{cell_text}' "
-                                f"(Font: {font.Name}, Size: {font.Size})\n"
-                            )
         except Exception:
             result_text += f"Skipping Table {idx} due to merged cell issue.\n"
 
